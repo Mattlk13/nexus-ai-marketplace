@@ -1,0 +1,34 @@
+ALTER TABLE `users` ADD CONSTRAINT `users_email_unique` UNIQUE(`email`);--> statement-breakpoint
+CREATE INDEX `agent_logs_created_at_idx` ON `agent_logs` (`createdAt`);--> statement-breakpoint
+CREATE INDEX `agent_logs_status_idx` ON `agent_logs` (`status`);--> statement-breakpoint
+CREATE INDEX `auctions_status_idx` ON `auctions` (`status`);--> statement-breakpoint
+CREATE INDEX `auctions_seller_idx` ON `auctions` (`sellerId`);--> statement-breakpoint
+CREATE INDEX `auctions_ends_at_idx` ON `auctions` (`endsAt`);--> statement-breakpoint
+CREATE INDEX `content_user_idx` ON `content_items` (`userId`);--> statement-breakpoint
+CREATE INDEX `content_type_idx` ON `content_items` (`contentType`);--> statement-breakpoint
+CREATE INDEX `content_published_idx` ON `content_items` (`isPublished`);--> statement-breakpoint
+CREATE INDEX `content_created_at_idx` ON `content_items` (`createdAt`);--> statement-breakpoint
+CREATE INDEX `feed_user_idx` ON `feed_posts` (`userId`);--> statement-breakpoint
+CREATE INDEX `feed_created_at_idx` ON `feed_posts` (`createdAt`);--> statement-breakpoint
+CREATE INDEX `feed_trending_idx` ON `feed_posts` (`isTrending`);--> statement-breakpoint
+CREATE INDEX `orders_buyer_idx` ON `orders` (`buyerId`);--> statement-breakpoint
+CREATE INDEX `orders_seller_idx` ON `orders` (`sellerId`);--> statement-breakpoint
+CREATE INDEX `orders_status_idx` ON `orders` (`status`);--> statement-breakpoint
+CREATE INDEX `orders_created_at_idx` ON `orders` (`createdAt`);--> statement-breakpoint
+CREATE INDEX `products_vendor_idx` ON `products` (`vendorId`);--> statement-breakpoint
+CREATE INDEX `products_category_idx` ON `products` (`category`);--> statement-breakpoint
+CREATE INDEX `products_active_idx` ON `products` (`isActive`);--> statement-breakpoint
+CREATE INDEX `products_source_idx` ON `products` (`source`);--> statement-breakpoint
+CREATE INDEX `products_sales_idx` ON `products` (`salesCount`);--> statement-breakpoint
+CREATE INDEX `seo_published_idx` ON `seo_pages` (`isPublished`);--> statement-breakpoint
+CREATE INDEX `seo_page_type_idx` ON `seo_pages` (`pageType`);--> statement-breakpoint
+CREATE INDEX `stripe_products_content_idx` ON `stripe_products` (`contentItemId`);--> statement-breakpoint
+CREATE INDEX `stripe_products_product_idx` ON `stripe_products` (`productId`);--> statement-breakpoint
+CREATE INDEX `uploaded_files_user_idx` ON `uploaded_files` (`userId`);--> statement-breakpoint
+CREATE INDEX `uploaded_files_category_idx` ON `uploaded_files` (`fileCategory`);--> statement-breakpoint
+CREATE INDEX `uploaded_files_published_idx` ON `uploaded_files` (`isPublished`);--> statement-breakpoint
+CREATE INDEX `uploaded_files_created_at_idx` ON `uploaded_files` (`createdAt`);--> statement-breakpoint
+CREATE INDEX `users_email_idx` ON `users` (`email`);--> statement-breakpoint
+CREATE INDEX `users_role_idx` ON `users` (`role`);--> statement-breakpoint
+CREATE INDEX `vendor_active_idx` ON `vendor_stores` (`isActive`);--> statement-breakpoint
+CREATE INDEX `vendor_revenue_idx` ON `vendor_stores` (`totalRevenue`);

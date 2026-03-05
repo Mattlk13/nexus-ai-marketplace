@@ -9,6 +9,7 @@ import {
 } from "../drizzle/schema";
 import { desc, eq, and, like, sql } from "drizzle-orm";
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
 import {
@@ -17,6 +18,21 @@ import {
   createContentCheckout,
   createProductCheckout,
 } from "./stripe";
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+/** Escape SQL LIKE wildcard characters to prevent unintended broad matches */
+function escapeLike(value: string): string {
+  return value.replace(/[%_\\]/g, (c) => `\\${c}`);
+}
+
+/** Safely parse LLM JSON response, returning null on failure */
+function safeParseLLMJson<T>(raw: string): T | null {
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
 
 // ─── Feed Router ──────────────────────────────────────────────────────────────
 const feedRouter = router({
@@ -49,9 +65,9 @@ const feedRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       const userRow = await db.select().from(users).where(eq(users.openId, ctx.user.openId)).limit(1);
-      if (!userRow[0]) throw new Error("User not found");
+      if (!userRow[0]) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
       const [post] = await db.insert(feedPosts).values({
         userId: userRow[0].id,
         body: input.body,
@@ -108,9 +124,9 @@ const contentRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       const userRow = await db.select().from(users).where(eq(users.openId, ctx.user.openId)).limit(1);
-      if (!userRow[0]) throw new Error("User not found");
+      if (!userRow[0]) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
       const [item] = await db.insert(contentItems).values({
         userId: userRow[0].id,
         title: input.title,
@@ -123,9 +139,9 @@ const contentRouter = router({
         isFree: input.isFree,
         tags: input.tags ? JSON.stringify(input.tags) : undefined,
         genre: input.genre,
-        isPublished: true,
+        isPublished: false, // FIX: default to draft, not auto-published
       }).$returningId();
-      await notifyOwner({ title: "New Content Published", content: `${ctx.user.name} published "${input.title}" (${input.contentType})` });
+      await notifyOwner({ title: "New Content Draft", content: `${ctx.user.name} created "${input.title}" (${input.contentType})` });
       return { id: item.id, success: true };
     }),
 
@@ -160,7 +176,12 @@ const contentRouter = router({
         },
       });
       const raw = (response.choices?.[0]?.message?.content as string) ?? "{}";
-      return JSON.parse(raw);
+      // FIX: safe JSON parse with validation
+      const data = safeParseLLMJson<{ title: string; content: string; description: string; tags: string[] }>(raw);
+      if (!data || !data.title || !data.content) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "AI generation failed to produce valid content. Please try again." });
+      }
+      return data;
     }),
 });
 
@@ -180,7 +201,8 @@ const marketplaceRouter = router({
       const conditions = [eq(products.isActive, true)];
       if (input.category) conditions.push(eq(products.category, input.category));
       if (input.source) conditions.push(eq(products.source, input.source));
-      if (input.search) conditions.push(like(products.title, `%${input.search}%`));
+      // FIX: escape LIKE wildcards to prevent unintended broad matches
+      if (input.search) conditions.push(like(products.title, `%${escapeLike(input.search)}%`));
       const rows = await db.select().from(products)
         .where(and(...conditions))
         .orderBy(desc(products.salesCount))
@@ -201,14 +223,14 @@ const marketplaceRouter = router({
     .input(z.object({ auctionId: z.number(), amount: z.number().positive() }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       const [auction] = await db.select().from(auctions).where(eq(auctions.id, input.auctionId)).limit(1);
-      if (!auction) throw new Error("Auction not found");
-      if (auction.status !== "active") throw new Error("Auction is not active");
+      if (!auction) throw new TRPCError({ code: "NOT_FOUND", message: "Auction not found" });
+      if (auction.status !== "active") throw new TRPCError({ code: "BAD_REQUEST", message: "Auction is not active" });
       const currentBid = parseFloat(String(auction.currentBid ?? auction.startingBid));
-      if (input.amount <= currentBid) throw new Error(`Bid must exceed current bid of $${currentBid}`);
+      if (input.amount <= currentBid) throw new TRPCError({ code: "BAD_REQUEST", message: `Bid must exceed current bid of $${currentBid}` });
       const userRow = await db.select().from(users).where(eq(users.openId, ctx.user.openId)).limit(1);
-      if (!userRow[0]) throw new Error("User not found");
+      if (!userRow[0]) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
       await db.update(auctions).set({
         currentBid: String(input.amount),
         bidCount: sql`${auctions.bidCount} + 1`,
@@ -237,9 +259,9 @@ const vendorRouter = router({
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       const userRow = await db.select().from(users).where(eq(users.openId, ctx.user.openId)).limit(1);
-      if (!userRow[0]) throw new Error("User not found");
+      if (!userRow[0]) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
       const slug = input.storeName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
       const [store] = await db.insert(vendorStores).values({
         userId: userRow[0].id,
@@ -320,7 +342,11 @@ const agentRouter = router({
         },
       });
       const raw = (response.choices?.[0]?.message?.content as string) ?? "{}";
-      const data = JSON.parse(raw);
+      // FIX: safe JSON parse with validation
+      const data = safeParseLLMJson<{ title: string; slug: string; metaDescription: string; content: string; keywords: string[] }>(raw);
+      if (!data || !data.title || !data.slug || !data.content) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "SEO agent failed to generate valid content. Please try again." });
+      }
       const db = await getDb();
       if (db) {
         await db.insert(seoPages).values({
@@ -360,9 +386,9 @@ export const appRouter = router({
       .input(z.object({ origin: z.string().url() }))
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database unavailable");
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
         const userRow = await db.select().from(users).where(eq(users.openId, ctx.user.openId)).limit(1);
-        if (!userRow[0]) throw new Error("User not found");
+        if (!userRow[0]) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
         const email = userRow[0].email ?? ctx.user.email ?? "";
         return createConnectAccount(userRow[0].id, email, input.origin);
       }),
@@ -381,9 +407,9 @@ export const appRouter = router({
       .input(z.object({ contentItemId: z.number(), origin: z.string().url() }))
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database unavailable");
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
         const userRow = await db.select().from(users).where(eq(users.openId, ctx.user.openId)).limit(1);
-        if (!userRow[0]) throw new Error("User not found");
+        if (!userRow[0]) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
         const email = userRow[0].email ?? ctx.user.email ?? "";
         return createContentCheckout(input.contentItemId, email, userRow[0].id, input.origin);
       }),
@@ -393,9 +419,9 @@ export const appRouter = router({
       .input(z.object({ productId: z.number(), origin: z.string().url() }))
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
-        if (!db) throw new Error("Database unavailable");
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
         const userRow = await db.select().from(users).where(eq(users.openId, ctx.user.openId)).limit(1);
-        if (!userRow[0]) throw new Error("User not found");
+        if (!userRow[0]) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
         const email = userRow[0].email ?? ctx.user.email ?? "";
         return createProductCheckout(input.productId, email, userRow[0].id, input.origin);
       }),

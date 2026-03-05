@@ -1,5 +1,5 @@
 import {
-  bigint, boolean, decimal, int, mysqlEnum, mysqlTable,
+  bigint, boolean, decimal, index, int, mysqlEnum, mysqlTable,
   text, timestamp, varchar
 } from "drizzle-orm/mysql-core";
 
@@ -8,7 +8,7 @@ export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
-  email: varchar("email", { length: 320 }),
+  email: varchar("email", { length: 320 }).unique(),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "vendor", "admin"]).default("user").notNull(),
   bio: text("bio"),
@@ -23,7 +23,10 @@ export const users = mysqlTable("users", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
-});
+}, (table) => ({
+  emailIdx: index("users_email_idx").on(table.email),
+  roleIdx: index("users_role_idx").on(table.role),
+}));
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
@@ -53,7 +56,12 @@ export const contentItems = mysqlTable("content_items", {
   copyrightRegistered: boolean("copyrightRegistered").default(false),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  userIdx: index("content_user_idx").on(table.userId),
+  typeIdx: index("content_type_idx").on(table.contentType),
+  publishedIdx: index("content_published_idx").on(table.isPublished),
+  createdAtIdx: index("content_created_at_idx").on(table.createdAt),
+}));
 
 export type ContentItem = typeof contentItems.$inferSelect;
 export type InsertContentItem = typeof contentItems.$inferInsert;
@@ -76,7 +84,10 @@ export const vendorStores = mysqlTable("vendor_stores", {
   commissionRate: decimal("commissionRate", { precision: 5, scale: 2 }).default("15.00"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  activeIdx: index("vendor_active_idx").on(table.isActive),
+  revenueIdx: index("vendor_revenue_idx").on(table.totalRevenue),
+}));
 
 export type VendorStore = typeof vendorStores.$inferSelect;
 export type InsertVendorStore = typeof vendorStores.$inferInsert;
@@ -104,7 +115,13 @@ export const products = mysqlTable("products", {
   rating: decimal("rating", { precision: 3, scale: 2 }).default("0.00"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  vendorIdx: index("products_vendor_idx").on(table.vendorId),
+  categoryIdx: index("products_category_idx").on(table.category),
+  activeIdx: index("products_active_idx").on(table.isActive),
+  sourceIdx: index("products_source_idx").on(table.source),
+  salesIdx: index("products_sales_idx").on(table.salesCount),
+}));
 
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = typeof products.$inferInsert;
@@ -126,7 +143,11 @@ export const auctions = mysqlTable("auctions", {
   status: mysqlEnum("status", ["active", "ended", "cancelled", "sold"]).default("active"),
   endsAt: timestamp("endsAt").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+  statusIdx: index("auctions_status_idx").on(table.status),
+  sellerIdx: index("auctions_seller_idx").on(table.sellerId),
+  endsAtIdx: index("auctions_ends_at_idx").on(table.endsAt),
+}));
 
 export type Auction = typeof auctions.$inferSelect;
 export type InsertAuction = typeof auctions.$inferInsert;
@@ -149,7 +170,11 @@ export const feedPosts = mysqlTable("feed_posts", {
   isTrending: boolean("isTrending").default(false),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  userIdx: index("feed_user_idx").on(table.userId),
+  createdAtIdx: index("feed_created_at_idx").on(table.createdAt),
+  trendingIdx: index("feed_trending_idx").on(table.isTrending),
+}));
 
 export type FeedPost = typeof feedPosts.$inferSelect;
 export type InsertFeedPost = typeof feedPosts.$inferInsert;
@@ -170,7 +195,12 @@ export const orders = mysqlTable("orders", {
   stripePaymentId: varchar("stripePaymentId", { length: 256 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  buyerIdx: index("orders_buyer_idx").on(table.buyerId),
+  sellerIdx: index("orders_seller_idx").on(table.sellerId),
+  statusIdx: index("orders_status_idx").on(table.status),
+  createdAtIdx: index("orders_created_at_idx").on(table.createdAt),
+}));
 
 export type Order = typeof orders.$inferSelect;
 export type InsertOrder = typeof orders.$inferInsert;
@@ -185,7 +215,10 @@ export const agentLogs = mysqlTable("agent_logs", {
   productsImported: int("productsImported").default(0),
   revenueGenerated: decimal("revenueGenerated", { precision: 10, scale: 2 }).default("0.00"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+  createdAtIdx: index("agent_logs_created_at_idx").on(table.createdAt),
+  statusIdx: index("agent_logs_status_idx").on(table.status),
+}));
 
 export type AgentLog = typeof agentLogs.$inferSelect;
 
@@ -202,7 +235,10 @@ export const seoPages = mysqlTable("seo_pages", {
   viewCount: int("viewCount").default(0),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  publishedIdx: index("seo_published_idx").on(table.isPublished),
+  pageTypeIdx: index("seo_page_type_idx").on(table.pageType),
+}));
 
 export type SeoPage = typeof seoPages.$inferSelect;
 
@@ -237,7 +273,10 @@ export const stripeProducts = mysqlTable("stripe_products", {
   currency: varchar("currency", { length: 3 }).default("usd"),
   isActive: boolean("isActive").default(true),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
-});
+}, (table) => ({
+  contentItemIdx: index("stripe_products_content_idx").on(table.contentItemId),
+  productIdx: index("stripe_products_product_idx").on(table.productId),
+}));
 
 export type StripeProduct = typeof stripeProducts.$inferSelect;
 export type InsertStripeProduct = typeof stripeProducts.$inferInsert;
@@ -262,7 +301,12 @@ export const uploadedFiles = mysqlTable("uploaded_files", {
   linkedContentId: int("linkedContentId"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  userIdx: index("uploaded_files_user_idx").on(table.userId),
+  categoryIdx: index("uploaded_files_category_idx").on(table.fileCategory),
+  publishedIdx: index("uploaded_files_published_idx").on(table.isPublished),
+  createdAtIdx: index("uploaded_files_created_at_idx").on(table.createdAt),
+}));
 
 export type UploadedFile = typeof uploadedFiles.$inferSelect;
 export type InsertUploadedFile = typeof uploadedFiles.$inferInsert;
