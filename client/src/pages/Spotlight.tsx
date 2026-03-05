@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import NavBar from "@/components/NavBar";
 import { Link, useLocation } from "wouter";
 import { Card } from "@/components/ui/card";
@@ -58,6 +59,7 @@ const WEEKLY_BEST = [
 ];
 
 export default function Spotlight() {
+  useEffect(() => { document.title = "Spotlight — Today's Best Creators | NEXUS"; }, []);
   const [, navigate] = useLocation();
   return (
     <div className="min-h-screen animated-bg">
@@ -235,6 +237,53 @@ export default function Spotlight() {
                 Start Creating Now
               </Button>
             </Card>
+          </div>
+        </div>
+
+        {/* Ad Revenue + Spotlight Integration Banner */}
+        <div className="container mt-8 pb-10 space-y-6">
+          <div className="w-full bg-white/5 border border-dashed border-white/10 rounded-xl p-4 text-center">
+            <div className="text-xs text-gray-500 mb-1 uppercase tracking-widest">Advertisement</div>
+            <div className="h-16 flex items-center justify-center">
+              <span className="text-gray-600 text-sm">[ Google AdSense — 728×90 Leaderboard Ad Unit ]</span>
+            </div>
+            <div className="text-xs text-gray-600 mt-1">
+              Passive ad revenue on every page view ·{" "}
+              <a href="https://adsense.google.com" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Set up AdSense →</a>
+            </div>
+          </div>
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-yellow-400 text-lg">⚡</span>
+              <h2 className="text-xl font-bold text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Spotlight Powered By</h2>
+              <a href="/integrations" className="ml-2 text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full px-3 py-1 hover:bg-blue-500/30 transition-colors">View All 200+ Integrations</a>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+              {[
+                { name: "CrewAI", desc: "AI Curation", url: "https://www.crewai.com", color: "text-purple-400" },
+                { name: "Suno AI", desc: "Music Gen", url: "https://suno.com", color: "text-pink-400" },
+                { name: "Runway ML", desc: "Video Gen", url: "https://runwayml.com", color: "text-blue-400" },
+                { name: "NovelAI", desc: "Story Gen", url: "https://novelai.net", color: "text-cyan-400" },
+                { name: "Midjourney", desc: "Art Gen", url: "https://www.midjourney.com", color: "text-indigo-400" },
+                { name: "ElevenLabs", desc: "Voice Gen", url: "https://elevenlabs.io", color: "text-green-400" },
+                { name: "Udio", desc: "Music AI", url: "https://www.udio.com", color: "text-amber-400" },
+                { name: "Pika Labs", desc: "Video AI", url: "https://pika.art", color: "text-orange-400" },
+                { name: "Leonardo AI", desc: "Art AI", url: "https://leonardo.ai", color: "text-yellow-400" },
+                { name: "Canva", desc: "Design", url: "https://www.canva.com", color: "text-teal-400" },
+                { name: "Google AdSense", desc: "Ad Revenue", url: "https://adsense.google.com", color: "text-sky-400" },
+                { name: "Outfy", desc: "Social Auto", url: "https://outfy.com", color: "text-rose-400" },
+                { name: "DMCA.com", desc: "Copyright", url: "https://www.dmca.com", color: "text-red-400" },
+                { name: "Stripe", desc: "Payments", url: "https://stripe.com", color: "text-emerald-400" },
+                { name: "n8n", desc: "Automation", url: "https://n8n.io", color: "text-lime-400" },
+                { name: "Algolia", desc: "Search", url: "https://www.algolia.com", color: "text-violet-400" },
+              ].map(({ name, desc, url, color }) => (
+                <a key={name} href={url} target="_blank" rel="noopener noreferrer"
+                  className="glass-card border-white/10 rounded-xl p-3 text-center hover:border-amber-500/30 transition-all group cursor-pointer block">
+                  <div className={`text-sm font-bold ${color} group-hover:scale-105 transition-transform`}>{name}</div>
+                  <div className="text-xs text-gray-400 mt-0.5">{desc}</div>
+                </a>
+              ))}
+            </div>
           </div>
         </div>
       </div>

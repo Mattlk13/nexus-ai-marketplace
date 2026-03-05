@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://aimarketplace-btmgydmz.manus.space/sitemap.xml
+
+# Disallow admin/api routes
+Disallow: /api/
+Disallow: /api/trpc/

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import NavBar from "@/components/NavBar";
 import { Link, useLocation } from "wouter";
 import { Card } from "@/components/ui/card";
@@ -48,6 +48,7 @@ const VENDOR_PERKS = [
 ];
 
 export default function VendorPortal() {
+  useEffect(() => { document.title = "Vendor Portal — Sell Your Creations | NEXUS"; }, []);
   const [isVendor] = useState(true); // Demo: show vendor dashboard
   const [, navigate] = useLocation();
 
@@ -263,6 +264,41 @@ export default function VendorPortal() {
               </Button>
             </div>
           )}
+        </div>
+
+        {/* Vendor Integration Banner */}
+        <div className="container mt-10 pb-10">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-yellow-400 text-lg">⚡</span>
+            <h2 className="text-xl font-bold text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Vendor Tools Powered By</h2>
+            <a href="/integrations" className="ml-2 text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full px-3 py-1 hover:bg-blue-500/30 transition-colors">View All Integrations</a>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+            {[
+              { name: "Stripe Connect", desc: "Payouts", url: "https://stripe.com/connect", color: "text-violet-400" },
+              { name: "Printful", desc: "Print-on-Demand", url: "https://www.printful.com", color: "text-blue-400" },
+              { name: "Printify", desc: "Custom Products", url: "https://printify.com", color: "text-green-400" },
+              { name: "Canva", desc: "Design", url: "https://www.canva.com", color: "text-pink-400" },
+              { name: "Cloudflare", desc: "CDN", url: "https://www.cloudflare.com", color: "text-orange-400" },
+              { name: "Watermarkly", desc: "Watermark", url: "https://watermarkly.com", color: "text-cyan-400" },
+              { name: "DistroKid", desc: "Music Dist.", url: "https://distrokid.com", color: "text-purple-400" },
+              { name: "KDP Amazon", desc: "eBook Pub.", url: "https://kdp.amazon.com", color: "text-yellow-400" },
+              { name: "CreativeCommons", desc: "Licensing", url: "https://creativecommons.org", color: "text-teal-400" },
+              { name: "DMCA.com", desc: "Protection", url: "https://www.dmca.com", color: "text-red-400" },
+              { name: "Digimarc", desc: "Fingerprint", url: "https://www.digimarc.com", color: "text-amber-400" },
+              { name: "Klaviyo", desc: "Email Mktg", url: "https://www.klaviyo.com", color: "text-emerald-400" },
+              { name: "Judge.me", desc: "Reviews", url: "https://judge.me", color: "text-rose-400" },
+              { name: "Tidio", desc: "Live Chat", url: "https://www.tidio.com", color: "text-sky-400" },
+              { name: "Loox", desc: "Photo Reviews", url: "https://loox.app", color: "text-indigo-400" },
+              { name: "ShipStation", desc: "Shipping", url: "https://www.shipstation.com", color: "text-lime-400" },
+            ].map(({ name, desc, url, color }) => (
+              <a key={name} href={url} target="_blank" rel="noopener noreferrer"
+                className="glass-card border-white/10 rounded-xl p-3 text-center hover:border-orange-500/30 transition-all group cursor-pointer block">
+                <div className={`text-sm font-bold ${color} group-hover:scale-105 transition-transform`}>{name}</div>
+                <div className="text-xs text-gray-400 mt-0.5">{desc}</div>
+              </a>
+            ))}
+          </div>
         </div>
       </div>
     </div>

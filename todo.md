@@ -85,3 +85,45 @@
 
 ## SEO Fixes
 - [x] Fix home page title: expanded to 45 chars using document.title
+
+## SEO — Additional Fixes (from conversation)
+- [x] Add meta description tag (150-160 chars) to index.html
+- [x] Add Open Graph tags (og:title, og:description, og:image) to index.html
+- [x] Add Twitter Card meta tags to index.html
+- [x] Add per-page document.title to Feed, Studio, Marketplace, Vendor, Spotlight pages
+- [x] Add robots.txt to client/public
+- [x] Add sitemap.xml to client/public
+
+## Missing Integration Tool Cards (from conversation)
+- [x] Add integration tool cards to Creator Studio (Suno, Runway, Udio, AudioCraft, FFmpeg, Kdenlive, Canva, etc.)
+- [x] Add integration tool cards to Marketplace (CJDropshipping, DSers, Spocket, Printful, EPROLO, etc.)
+- [x] Add integration tool cards to Vendor Portal (Stripe, PayPal, Printful, ShipStation, etc.)
+- [x] Add integration tool cards to Feed (Buffer, Hootsuite, Outfy, social platform links)
+- [ ] Add MCP server directory section to Integrations page
+- [ ] Add GitHub repos section to Integrations page
+- [ ] Add AI Agents section (CrewAI, AutoGen, LangChain) to Integrations page
+- [ ] Add free APIs section to Integrations page
+- [ ] Add automation tools section (n8n, Make, Zapier) to Integrations page
+
+## Missing Platform Features (from conversation)
+- [ ] S3 file upload for creator content (music, video, ebook, images)
+- [ ] Real-time chat with Socket.io (user-to-user messaging like Facebook)
+- [ ] Push notifications for bids, sales, and new follower- [x] Add Google AdSense ad units on Feed and Spotlight pages (passive income) [ ] Social media auto-posting integration (Outfy/Buffer) on Vendor Portal
+- [ ] Shopify product sync via CJDropshipping API (auto-import 50 products/day)
+- [ ] eBay-style auction countdown timers (live, real-time)
+- [ ] User profile pages with avatar, bio, content portfolio
+- [ ] Content copyright registration flow for creators
+- [ ] Tutorial/onboarding flow for new users and vendors
+- [ ] Newsfeed algorithm (trending, following, recommended)
+- [ ] Story/reel preview carousel on Feed page
+- [ ] Vendor analytics dashboard with real sales charts
+- [ ] eBook generator (AI-powered, multi-chapter)
+- [ ] Writing workshop with AI co-author assistant
+- [ ] AI music mashup tool integration
+- [ ] Mobile app scaffold (React Native / Expo)
+
+## Stripe Integration (from conversation)
+- [ ] Add Stripe Connect for vendor payouts
+- [ ] Add Stripe Checkout for content purchases
+- [ ] Add Stripe subscription billing for premium vendor tier
+- [ ] Revenue split automation (platform % + vendor %)

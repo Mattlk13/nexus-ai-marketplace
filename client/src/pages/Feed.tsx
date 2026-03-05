@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import NavBar from "@/components/NavBar";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,7 @@ const QUICK_CREATE = [
 ];
 
 export default function Feed() {
+  useEffect(() => { document.title = "Social Feed — Connect & Discover | NEXUS"; }, []);
   const [, navigate] = useLocation();
 
   return (
@@ -330,6 +332,56 @@ export default function Feed() {
                   </Button>
                 </Link>
               </Card>
+            </div>
+          </div>
+        </div>
+
+        {/* Ad Revenue + Integration Banner */}
+        <div className="container mt-8 pb-10 space-y-6">
+          {/* Google AdSense Placeholder */}
+          <div className="w-full bg-white/5 border border-dashed border-white/10 rounded-xl p-4 text-center">
+            <div className="text-xs text-gray-500 mb-1 uppercase tracking-widest">Advertisement</div>
+            <div className="h-16 flex items-center justify-center">
+              <span className="text-gray-600 text-sm">[ Google AdSense — 728×90 Leaderboard Ad Unit ]</span>
+            </div>
+            <div className="text-xs text-gray-600 mt-1">
+              Passive ad revenue on every page view ·{" "}
+              <a href="https://adsense.google.com" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">Set up AdSense →</a>
+            </div>
+          </div>
+
+          {/* Social & Feed Integration Banner */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="text-yellow-400 text-lg">⚡</span>
+              <h2 className="text-xl font-bold text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Feed & Social Powered By</h2>
+              <a href="/integrations" className="ml-2 text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full px-3 py-1 hover:bg-blue-500/30 transition-colors">View All 200+ Integrations</a>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+              {[
+                { name: "Outfy", desc: "Auto Social Post", url: "https://outfy.com", color: "text-blue-400" },
+                { name: "Buffer", desc: "Schedule Posts", url: "https://buffer.com", color: "text-cyan-400" },
+                { name: "Hootsuite", desc: "Social Mgmt", url: "https://hootsuite.com", color: "text-green-400" },
+                { name: "Google AdSense", desc: "Ad Revenue", url: "https://adsense.google.com", color: "text-yellow-400" },
+                { name: "Meta Ads", desc: "Facebook Ads", url: "https://www.facebook.com/business/ads", color: "text-blue-500" },
+                { name: "TikTok Ads", desc: "TikTok Mktg", url: "https://ads.tiktok.com", color: "text-pink-400" },
+                { name: "Pinterest Ads", desc: "Pinterest Mktg", url: "https://ads.pinterest.com", color: "text-red-400" },
+                { name: "CrewAI", desc: "AI Agents", url: "https://www.crewai.com", color: "text-purple-400" },
+                { name: "n8n", desc: "Automation", url: "https://n8n.io", color: "text-orange-400" },
+                { name: "Zapier", desc: "Workflows", url: "https://zapier.com", color: "text-amber-400" },
+                { name: "Make", desc: "Automation", url: "https://www.make.com", color: "text-indigo-400" },
+                { name: "Growave", desc: "Social Proof", url: "https://growave.io", color: "text-teal-400" },
+                { name: "Tidio", desc: "Live Chat", url: "https://www.tidio.com", color: "text-sky-400" },
+                { name: "Brevo", desc: "Email/SMS", url: "https://www.brevo.com", color: "text-emerald-400" },
+                { name: "Pushover", desc: "Push Notifs", url: "https://pushover.net", color: "text-rose-400" },
+                { name: "Algolia", desc: "Search", url: "https://www.algolia.com", color: "text-violet-400" },
+              ].map(({ name, desc, url, color }) => (
+                <a key={name} href={url} target="_blank" rel="noopener noreferrer"
+                  className="glass-card border-white/10 rounded-xl p-3 text-center hover:border-blue-500/30 transition-all group cursor-pointer block">
+                  <div className={`text-sm font-bold ${color} group-hover:scale-105 transition-transform`}>{name}</div>
+                  <div className="text-xs text-gray-400 mt-0.5">{desc}</div>
+                </a>
+              ))}
             </div>
           </div>
         </div>
