@@ -1,0 +1,268 @@
+import { useState } from "react";
+import NavBar from "@/components/NavBar";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import {
+  Store, Package, DollarSign, TrendingUp, BarChart3, Upload, Tag,
+  Star, Users, ShoppingBag, Music, Video, BookOpen, Image, FileText,
+  Settings, Bell, ChevronRight, Plus, Eye, Heart, Zap, Shield, CheckCircle
+} from "lucide-react";
+
+const VENDOR_STATS = [
+  { label: "Total Revenue", value: "$4,847.50", change: "+24%", icon: DollarSign, color: "text-green-400" },
+  { label: "Products Listed", value: "127", change: "+12", icon: Package, color: "text-blue-400" },
+  { label: "Total Sales", value: "384", change: "+18%", icon: ShoppingBag, color: "text-purple-400" },
+  { label: "Followers", value: "2,841", change: "+156", icon: Users, color: "text-yellow-400" },
+];
+
+const RECENT_SALES = [
+  { item: "Neon Dreamscape EP", type: "Music", buyer: "User_4821", amount: "$4.99", date: "2m ago", status: "completed" },
+  { item: "Prompt Engineering Bible", type: "eBook", buyer: "User_7293", amount: "$12.99", date: "18m ago", status: "completed" },
+  { item: "AI City Timelapse", type: "Video", buyer: "User_1047", amount: "$9.99", date: "1h ago", status: "completed" },
+  { item: "Cosmic Portraits Pack", type: "Art", buyer: "User_5582", amount: "$7.99", date: "3h ago", status: "completed" },
+  { item: "Smart LED Desk Lamp", type: "Product", buyer: "User_2219", amount: "$24.99", date: "5h ago", status: "shipped" },
+];
+
+const LISTING_TYPES = [
+  { icon: Music, label: "Music & Audio", desc: "Songs, beats, podcasts, sound effects", color: "text-purple-400", bg: "bg-purple-500/10" },
+  { icon: Video, label: "Videos", desc: "Tutorials, films, animations, clips", color: "text-blue-400", bg: "bg-blue-500/10" },
+  { icon: BookOpen, label: "eBooks & Docs", desc: "Books, guides, papers, courses", color: "text-green-400", bg: "bg-green-500/10" },
+  { icon: Image, label: "Art & Photos", desc: "Digital art, photography, graphics", color: "text-pink-400", bg: "bg-pink-500/10" },
+  { icon: FileText, label: "Written Content", desc: "Blog posts, articles, templates", color: "text-cyan-400", bg: "bg-cyan-500/10" },
+  { icon: Package, label: "Physical Products", desc: "Dropship or your own products", color: "text-yellow-400", bg: "bg-yellow-500/10" },
+];
+
+const VENDOR_PERKS = [
+  "Keep 70–85% of every sale",
+  "Automated payment deposits daily",
+  "AI-powered marketing for your listings",
+  "Featured in Daily Spotlight rotation",
+  "Built-in copyright protection",
+  "Analytics dashboard & revenue tracking",
+  "Direct messaging with buyers",
+  "Bulk upload tools",
+];
+
+export default function VendorPortal() {
+  const [isVendor] = useState(true); // Demo: show vendor dashboard
+
+  return (
+    <div className="min-h-screen animated-bg">
+      <NavBar />
+      <div className="pt-20 pb-16">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-orange-600/10 to-yellow-600/10 border-b border-white/10 py-8">
+          <div className="container">
+            <div className="flex items-center justify-between">
+              <div>
+                <Badge className="mb-2 bg-orange-500/20 text-orange-300 border-orange-500/30">Vendor Portal</Badge>
+                <h1 className="text-3xl font-bold text-white mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                  Your Vendor Dashboard
+                </h1>
+                <p className="text-gray-400 text-sm">Manage listings, track sales, and grow your store</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button variant="outline" size="sm" className="border-white/20 text-gray-300 hover:bg-white/10"
+                  onClick={() => toast.info("Vendor settings — Coming soon!")}>
+                  <Settings className="w-4 h-4 mr-1" /> Settings
+                </Button>
+                <Button className="bg-gradient-to-r from-orange-600 to-yellow-600 text-white border-0"
+                  onClick={() => toast.success("New listing form — Opening Creator Studio!")}>
+                  <Plus className="w-4 h-4 mr-2" /> New Listing
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="container mt-6">
+          {isVendor ? (
+            // Vendor Dashboard View
+            <div className="space-y-6">
+              {/* Stats */}
+              <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {VENDOR_STATS.map(({ label, value, change, icon: Icon, color }) => (
+                  <Card key={label} className="glass-card border-white/10 p-5">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className={`w-10 h-10 ${color.replace("text-", "bg-").replace("400", "500/10")} rounded-lg flex items-center justify-center`}>
+                        <Icon className={`w-5 h-5 ${color}`} />
+                      </div>
+                      <Badge className="text-xs bg-green-500/20 text-green-300 border-0">{change}</Badge>
+                    </div>
+                    <div className="text-2xl font-bold text-white mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{value}</div>
+                    <div className="text-xs text-gray-400">{label}</div>
+                  </Card>
+                ))}
+              </div>
+
+              <div className="grid lg:grid-cols-[1fr_320px] gap-6">
+                <div className="space-y-5">
+                  <Tabs defaultValue="listings">
+                    <TabsList className="glass-card border border-white/10 h-auto p-1 bg-transparent">
+                      <TabsTrigger value="listings" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400 text-sm">My Listings</TabsTrigger>
+                      <TabsTrigger value="sales" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400 text-sm">Recent Sales</TabsTrigger>
+                      <TabsTrigger value="analytics" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400 text-sm">Analytics</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="listings" className="mt-4">
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        {LISTING_TYPES.map(({ icon: Icon, label, desc, color, bg }) => (
+                          <Card key={label} className="glass-card border-white/10 p-4 hover:border-orange-500/30 transition-all cursor-pointer group"
+                            onClick={() => toast.info(`Creating ${label} listing — Opening Studio!`)}>
+                            <div className="flex items-center gap-3 mb-2">
+                              <div className={`w-9 h-9 ${bg} rounded-lg flex items-center justify-center`}>
+                                <Icon className={`w-4.5 h-4.5 ${color}`} />
+                              </div>
+                              <div>
+                                <div className="font-semibold text-white text-sm">{label}</div>
+                                <div className="text-xs text-gray-400">{desc}</div>
+                              </div>
+                            </div>
+                            <Button size="sm" variant="outline" className="w-full border-white/20 text-gray-300 hover:bg-white/10 text-xs h-7 group-hover:border-orange-500/40">
+                              <Plus className="w-3 h-3 mr-1" /> Add {label.split(" ")[0]} Listing
+                            </Button>
+                          </Card>
+                        ))}
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="sales" className="mt-4">
+                      <Card className="glass-card border-white/10 overflow-hidden">
+                        <div className="p-4 border-b border-white/10">
+                          <div className="font-semibold text-white text-sm">Recent Sales</div>
+                        </div>
+                        <div className="divide-y divide-white/5">
+                          {RECENT_SALES.map((sale, i) => (
+                            <div key={i} className="p-4 flex items-center justify-between hover:bg-white/5 transition-colors">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center text-white text-xs font-bold">
+                                  {sale.type[0]}
+                                </div>
+                                <div>
+                                  <div className="text-sm text-white font-medium">{sale.item}</div>
+                                  <div className="text-xs text-gray-400">{sale.buyer} · {sale.date}</div>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-sm font-bold text-green-400">{sale.amount}</div>
+                                <Badge className={`text-xs border-0 ${sale.status === "completed" ? "bg-green-500/20 text-green-300" : "bg-blue-500/20 text-blue-300"}`}>
+                                  {sale.status}
+                                </Badge>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </Card>
+                    </TabsContent>
+
+                    <TabsContent value="analytics" className="mt-4">
+                      <Card className="glass-card border-white/10 p-6">
+                        <div className="flex items-center gap-2 mb-4">
+                          <BarChart3 className="w-5 h-5 text-blue-400" />
+                          <span className="font-semibold text-white">Revenue This Week</span>
+                        </div>
+                        <div className="flex items-end gap-2 h-32 mb-4">
+                          {[40, 65, 45, 80, 60, 95, 75].map((h, i) => (
+                            <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                              <div
+                                className="w-full bg-gradient-to-t from-blue-600 to-purple-600 rounded-t-sm opacity-80 hover:opacity-100 transition-opacity cursor-pointer"
+                                style={{ height: `${h}%` }}
+                                onClick={() => toast.info(`Day ${i + 1}: $${(h * 5).toFixed(2)}`)}
+                              />
+                              <div className="text-xs text-gray-500">{["M","T","W","T","F","S","S"][i]}</div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                          {[["Views", "12,847"], ["Clicks", "2,341"], ["Conversions", "8.4%"]].map(([label, val]) => (
+                            <div key={label} className="bg-white/5 rounded-lg p-3 text-center">
+                              <div className="text-lg font-bold text-white">{val}</div>
+                              <div className="text-xs text-gray-400">{label}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </Card>
+                    </TabsContent>
+                  </Tabs>
+                </div>
+
+                {/* Right Panel */}
+                <div className="space-y-4">
+                  <Card className="glass-card border-white/10 p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Zap className="w-4 h-4 text-yellow-400" />
+                      <span className="font-semibold text-white text-sm">AI Marketing Agent</span>
+                      <span className="w-2 h-2 bg-green-400 rounded-full pulse-live ml-auto" />
+                    </div>
+                    <p className="text-xs text-gray-400 mb-3">Your AI agent is actively promoting your listings on 5 social platforms and running SEO optimization.</p>
+                    <div className="space-y-2">
+                      {["Posted to Instagram · 2h ago", "SEO optimized 12 listings", "Email campaign sent · 847 opens", "TikTok post scheduled · 6PM"].map(activity => (
+                        <div key={activity} className="flex items-center gap-2 text-xs text-gray-300">
+                          <CheckCircle className="w-3 h-3 text-green-400 shrink-0" />
+                          {activity}
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+
+                  <Card className="glass-card border-white/10 p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Bell className="w-4 h-4 text-blue-400" />
+                      <span className="font-semibold text-white text-sm">Notifications</span>
+                    </div>
+                    <div className="space-y-2">
+                      {[
+                        { msg: "New sale: Neon Dreamscape EP", time: "2m ago", color: "text-green-400" },
+                        { msg: "You were featured in Spotlight!", time: "1h ago", color: "text-yellow-400" },
+                        { msg: "New follower: BeatMaster_X", time: "3h ago", color: "text-blue-400" },
+                        { msg: "Review received: ⭐⭐⭐⭐⭐", time: "5h ago", color: "text-purple-400" },
+                      ].map(({ msg, time, color }) => (
+                        <div key={msg} className="flex items-start gap-2 p-2 rounded-lg hover:bg-white/5 cursor-pointer"
+                          onClick={() => toast.info(msg)}>
+                          <div className={`w-1.5 h-1.5 rounded-full ${color.replace("text-", "bg-")} mt-1.5 shrink-0`} />
+                          <div>
+                            <div className="text-xs text-gray-200">{msg}</div>
+                            <div className="text-xs text-gray-500">{time}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+
+                  <Card className="glass-card border-white/10 p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Shield className="w-4 h-4 text-green-400" />
+                      <span className="font-semibold text-white text-sm">Vendor Benefits</span>
+                    </div>
+                    <div className="space-y-2">
+                      {VENDOR_PERKS.map(perk => (
+                        <div key={perk} className="flex items-center gap-2 text-xs text-gray-300">
+                          <CheckCircle className="w-3 h-3 text-green-400 shrink-0" />
+                          {perk}
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                </div>
+              </div>
+            </div>
+          ) : (
+            // Sign Up CTA
+            <div className="max-w-2xl mx-auto text-center py-16">
+              <Store className="w-16 h-16 text-orange-400 mx-auto mb-4" />
+              <h2 className="text-3xl font-bold text-white mb-4">Open Your Store in 60 Seconds</h2>
+              <p className="text-gray-400 mb-8">Join 1,200+ vendors selling on NEXUS. Keep 70–85% of every sale.</p>
+              <Button size="lg" className="bg-gradient-to-r from-orange-600 to-yellow-600 text-white border-0"
+                onClick={() => toast.success("Vendor registration — Coming soon!")}>
+                Become a Vendor — Free
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

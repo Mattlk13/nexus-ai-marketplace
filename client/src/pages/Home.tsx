@@ -1,579 +1,616 @@
-import { useEffect, useRef, useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import NavBar from "@/components/NavBar";
+import { toast } from "sonner";
 import {
-  Bot, TrendingUp, ShoppingCart, Zap, DollarSign, Users,
-  Star, ArrowRight, CheckCircle, BarChart3, Globe, Shield,
-  Gavel, Store, Package, Megaphone, Brain, ChevronRight
+  Music, Video, BookOpen, ShoppingBag, Store, Star, Zap, ArrowRight,
+  Users, TrendingUp, DollarSign, Globe, Shield, Cpu, Play, Heart,
+  MessageCircle, Share2, Eye, ChevronRight, Sparkles, Mic, PenTool,
+  Upload, Download, Copyright, BarChart3, Bot, Rocket
 } from "lucide-react";
 
-/* === MIDNIGHT COMMAND CENTER DESIGN ===
-   Deep navy mission-control aesthetic, electric blue + gold accents
-   Syne (display) + Inter (body) + JetBrains Mono (numbers)
-*/
+const HERO_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663307221380/BtMgYDmz9zuh95r9ZYuGVm/hero-main-bGeN2xJHdBchxH78yg7oeE.webp";
+const CREATOR_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663307221380/BtMgYDmz9zuh95r9ZYuGVm/creator-studio-YN7xx46xuNtGAGfmivGB2f.webp";
+const MARKET_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663307221380/BtMgYDmz9zuh95r9ZYuGVm/marketplace-hero-YcLnwee9UYmUqxagHRjGWB.webp";
+const FEED_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663307221380/BtMgYDmz9zuh95r9ZYuGVm/social-feed-QhASQ8TDoD9rr2LrNyEutY.webp";
+const SPOTLIGHT_IMG = "https://d2xsxph8kpxj0f.cloudfront.net/310519663307221380/BtMgYDmz9zuh95r9ZYuGVm/spotlight-hero-TYMSMXEemkZgFMLGmvjTMV.webp";
 
-// ── Live Revenue Counter ──────────────────────────────────────────────────────
-function LiveCounter({ target, prefix = "$", suffix = "" }: { target: number; prefix?: string; suffix?: string }) {
-  const [count, setCount] = useState(0);
-  const [isVisible, setIsVisible] = useState(false);
-  const ref = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) setIsVisible(true);
-    });
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (!isVisible) return;
-    const duration = 2000;
-    const steps = 60;
-    const increment = target / steps;
-    let current = 0;
-    const timer = setInterval(() => {
-      current += increment;
-      if (current >= target) { setCount(target); clearInterval(timer); }
-      else setCount(Math.floor(current));
-    }, duration / steps);
-    return () => clearInterval(timer);
-  }, [isVisible, target]);
-
-  return (
-    <span ref={ref} className="font-mono animate-counter-glow" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-      {prefix}{count.toLocaleString()}{suffix}
-    </span>
-  );
-}
-
-// ── Agent Status Dot ─────────────────────────────────────────────────────────
-function AgentDot({ delay = 0 }: { delay?: number }) {
-  return (
-    <span
-      className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-agent-pulse"
-      style={{ animationDelay: `${delay}ms` }}
-    />
-  );
-}
-
-// ── Live Ticker ───────────────────────────────────────────────────────────────
 const TICKER_ITEMS = [
-  "🛒 New Order: Wireless Earbuds — $47.99 profit",
-  "📦 CJDropshipping fulfilled: 3 orders",
-  "📈 Product Manager imported 12 trending items",
-  "💰 Vendor payout processed: $234.50",
-  "🔥 Flash sale: Phone Cases — 847% margin",
-  "🤖 CEO Agent: KPIs on target — $2,847 today",
-  "🏷️ Auction closed: Vintage Watch — $380 (10% fee: $38)",
-  "📣 Marketing Agent posted to 5 platforms",
-  "🌟 New vendor registered: TechGadgets Store",
-  "💳 Stripe payout: $1,204.33 → your account",
+  "🎵 AI Music Generation — Create full songs in seconds",
+  "🎬 AI Video Studio — Generate & edit videos with AI",
+  "📚 eBook Publisher — Write & sell your books instantly",
+  "🛒 Dropship Marketplace — 50,000+ products auto-listed",
+  "⭐ Daily Spotlight — Get featured to 100K+ users",
+  "💰 Earn on Every Sale — Automated profit deposits",
+  "🤖 5 AI Agents — Running your store 24/7",
+  "🎤 AI Song Mashup — Remix any track with AI",
+  "✍️ Writing Workshop — Blog, forum, stories & more",
+  "🏪 Vendor Portal — Open your shop in 60 seconds",
 ];
 
-function LiveTicker() {
-  const items = [...TICKER_ITEMS, ...TICKER_ITEMS];
+const FEATURES = [
+  { icon: Music, label: "AI Music Studio", desc: "Generate full songs, beats, and mashups with AI", color: "text-purple-400", bg: "bg-purple-500/10", href: "/studio" },
+  { icon: Video, label: "Video Creator", desc: "AI video generation and professional editing tools", color: "text-blue-400", bg: "bg-blue-500/10", href: "/studio" },
+  { icon: PenTool, label: "Writing Workshop", desc: "Blogs, stories, eBooks, and educational content", color: "text-cyan-400", bg: "bg-cyan-500/10", href: "/studio" },
+  { icon: BookOpen, label: "eBook Publisher", desc: "Generate, publish, and sell eBooks instantly", color: "text-green-400", bg: "bg-green-500/10", href: "/studio" },
+  { icon: ShoppingBag, label: "Dropship Market", desc: "50,000+ products auto-listed and fulfilled", color: "text-yellow-400", bg: "bg-yellow-500/10", href: "/marketplace" },
+  { icon: Store, label: "Vendor Portal", desc: "Open your storefront and sell your creations", color: "text-orange-400", bg: "bg-orange-500/10", href: "/vendor" },
+  { icon: Star, label: "Daily Spotlight", desc: "Get featured and reach thousands of new fans", color: "text-amber-400", bg: "bg-amber-500/10", href: "/spotlight" },
+  { icon: Rss2, label: "Social Feed", desc: "Share, discover, and connect with creators", color: "text-pink-400", bg: "bg-pink-500/10", href: "/feed" },
+];
+
+function Rss2({ className }: { className?: string }) {
   return (
-    <div className="overflow-hidden bg-[oklch(0.11_0.025_240)] border-y border-[rgba(14,165,233,0.2)] py-2.5">
-      <div className="flex animate-ticker whitespace-nowrap gap-12">
-        {items.map((item, i) => (
-          <span key={i} className="text-sm text-sky-300 flex-shrink-0" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-            {item}
-          </span>
-        ))}
-      </div>
-    </div>
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 5c7.18 0 13 5.82 13 13M6 11a7 7 0 017 7M6 17a1 1 0 110-2 1 1 0 010 2z" />
+    </svg>
   );
 }
 
-// ── Navigation ────────────────────────────────────────────────────────────────
-function Nav() {
-  const [scrolled, setScrolled] = useState(false);
+const STATS = [
+  { value: "50K+", label: "Products Listed", icon: ShoppingBag },
+  { value: "5", label: "AI Agents Active", icon: Bot },
+  { value: "∞", label: "Creator Tools", icon: Sparkles },
+  { value: "24/7", label: "Fully Automated", icon: Cpu },
+];
+
+const REVENUE_STREAMS = [
+  { icon: ShoppingBag, title: "Dropshipping Sales", pct: "50–150%", desc: "Margin on every product sold" },
+  { icon: Store, title: "Vendor Commissions", pct: "10–20%", desc: "Cut from every vendor sale" },
+  { icon: TrendingUp, title: "Auction Fees", pct: "5–10%", desc: "On every winning bid" },
+  { icon: DollarSign, title: "Listing Fees", pct: "$0.50–$5", desc: "Per P2P listing posted" },
+  { icon: Globe, title: "Ad Revenue", pct: "Passive", desc: "Google AdSense + affiliate" },
+  { icon: Music, title: "Content Sales", pct: "15–30%", desc: "Platform cut on creator content" },
+];
+
+const TRENDING_CONTENT = [
+  { type: "Music", title: "Neon Dreamscape EP", creator: "SynthWave_AI", likes: "2.4K", views: "18K", price: "$4.99", color: "from-purple-600 to-blue-600" },
+  { type: "Video", title: "AI City Timelapse", creator: "VisualForge", likes: "1.8K", views: "24K", price: "$9.99", color: "from-blue-600 to-cyan-600" },
+  { type: "eBook", title: "Prompt Engineering Bible", creator: "AIAuthor", likes: "3.1K", views: "41K", price: "$12.99", color: "from-green-600 to-teal-600" },
+  { type: "Art", title: "Cosmic Portraits Pack", creator: "PixelMage", likes: "987", views: "9.2K", price: "$7.99", color: "from-pink-600 to-purple-600" },
+];
+
+const AI_AGENTS = [
+  { name: "CEO Agent", time: "8PM CT Daily", task: "Reviews KPIs, sends profit report", status: "active" },
+  { name: "Product Manager", time: "6AM CT Daily", task: "Imports 50 trending products", status: "active" },
+  { name: "Marketing Agent", time: "12PM CT Daily", task: "Posts to 5 social platforms", status: "active" },
+  { name: "Vendor Manager", time: "Continuous", task: "Approves vendors, moderates listings", status: "active" },
+  { name: "Finance Agent", time: "8:30PM CT Daily", task: "Deposits profit to your account", status: "active" },
+];
+
+export default function Home() {
+  // The userAuth hooks provides authentication state
+  // To implement login/logout functionality, simply call logout() or redirect to getLoginUrl()
+  let { user, loading, error, isAuthenticated, logout } = useAuth();
+
+  const [tickerOffset, setTickerOffset] = useState(0);
+
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handler);
-    return () => window.removeEventListener("scroll", handler);
+    const interval = setInterval(() => {
+      setTickerOffset(prev => (prev + 1) % TICKER_ITEMS.length);
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? "bg-[oklch(0.08_0.02_240)]/95 backdrop-blur-md border-b border-[rgba(14,165,233,0.15)]" : ""}`}>
-      <div className="container flex items-center justify-between h-16">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center">
-            <Bot className="w-4 h-4 text-white" />
+    <div className="min-h-screen animated-bg">
+      <NavBar />
+
+      {/* Live Ticker */}
+      <div className="fixed top-16 left-0 right-0 z-40 bg-blue-600/20 border-b border-blue-500/20 overflow-hidden">
+        <div className="flex items-center">
+          <div className="shrink-0 bg-blue-600 px-3 py-1 text-xs font-bold text-white uppercase tracking-wider">LIVE</div>
+          <div className="overflow-hidden flex-1">
+            <div className="ticker-animate flex gap-16 py-1 px-4 whitespace-nowrap">
+              {[...TICKER_ITEMS, ...TICKER_ITEMS].map((item, i) => (
+                <span key={i} className="text-xs text-blue-200 shrink-0">{item}</span>
+              ))}
+            </div>
           </div>
-          <span className="font-bold text-lg text-white" style={{ fontFamily: "'Syne', sans-serif" }}>
-            AI<span className="text-amber-400">Market</span>
-          </span>
-        </div>
-        <div className="hidden md:flex items-center gap-8 text-sm text-sky-200/70">
-          {["Features", "Revenue", "Agents", "Integrations", "Pricing"].map(item => (
-            <a key={item} href={`#${item.toLowerCase()}`} className="hover:text-sky-300 transition-colors">{item}</a>
-          ))}
-        </div>
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" className="text-sky-300 hover:text-white hidden md:flex">
-            View Blueprint
-          </Button>
-          <Button size="sm" className="bg-sky-500 hover:bg-sky-400 text-white font-semibold px-5">
-            Get Started <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
-          </Button>
         </div>
       </div>
-    </nav>
-  );
-}
 
-// ── Hero Section ──────────────────────────────────────────────────────────────
-function Hero() {
-  return (
-    <section className="relative min-h-screen flex items-center overflow-hidden pt-16">
-      {/* Background image */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(https://d2xsxph8kpxj0f.cloudfront.net/310519663307221380/BtMgYDmz9zuh95r9ZYuGVm/hero-bg-2A5HVtkmpavFrBrAgGMqve.webp)` }}
-      />
-      <div className="absolute inset-0 bg-gradient-to-r from-[oklch(0.08_0.02_240)]/95 via-[oklch(0.08_0.02_240)]/80 to-[oklch(0.08_0.02_240)]/40" />
-      <div className="absolute inset-0 bg-gradient-to-t from-[oklch(0.08_0.02_240)] via-transparent to-transparent" />
+      {/* Hero Section */}
+      <section className="relative min-h-screen flex items-center pt-28 pb-16 overflow-hidden">
+        <div
+          className="absolute inset-0 bg-cover bg-center opacity-20"
+          style={{ backgroundImage: `url(${HERO_IMG})` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/60 to-background" />
 
-      <div className="container relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Left: Copy */}
-          <div className="animate-float-up">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-card text-sky-300 text-xs font-medium mb-6 neon-border-blue">
-              <AgentDot />
-              <span>5 AI Agents Active — Running 24/7</span>
-            </div>
+        {/* Floating orbs */}
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-600/10 rounded-full blur-3xl float-anim" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl float-anim" style={{ animationDelay: "3s" }} />
 
-            <h1 className="text-5xl lg:text-6xl xl:text-7xl font-extrabold leading-[1.05] mb-6" style={{ fontFamily: "'Syne', sans-serif" }}>
-              Your Store.<br />
-              <span className="text-gradient-blue">Fully Automated.</span><br />
-              <span className="text-gradient-gold">Always Profitable.</span>
+        <div className="container relative z-10">
+          <div className="max-w-4xl mx-auto text-center">
+            <Badge className="mb-6 bg-blue-500/20 text-blue-300 border-blue-500/30 text-sm px-4 py-1.5 inline-flex items-center gap-2">
+              <span className="w-2 h-2 bg-green-400 rounded-full pulse-live" />
+              Fully Autonomous AI Marketplace — Live Now
+            </Badge>
+
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-tight mb-6" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              The World's First
+              <br />
+              <span className="text-gradient-rainbow">AI Social Marketplace</span>
             </h1>
 
-            <p className="text-sky-100/70 text-lg leading-relaxed mb-8 max-w-lg">
-              An AI-agent-operated social marketplace combining Amazon, eBay, Facebook Marketplace, and Etsy — running itself 24/7. Zero employees. Five revenue streams. Daily profit deposits.
+            <p className="text-lg sm:text-xl text-gray-300 mb-8 max-w-2xl mx-auto leading-relaxed">
+              Create music, videos, eBooks, and more with AI. Sell to millions. Connect with creators.
+              Run entirely by AI agents — <strong className="text-white">zero manual work required.</strong>
             </p>
 
-            <div className="flex flex-wrap gap-4 mb-10">
-              <Button size="lg" className="bg-sky-500 hover:bg-sky-400 text-white font-bold px-8 py-6 text-base rounded-lg">
-                Launch Your Marketplace <ArrowRight className="w-4 h-4 ml-2" />
+            <div className="flex flex-wrap gap-4 justify-center mb-12">
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white border-0 text-base px-8 glow-blue"
+                onClick={() => toast.success("Welcome to NEXUS! Sign-up launching very soon.")}
+              >
+                <Rocket className="w-5 h-5 mr-2" />
+                Start Creating Free
               </Button>
-              <Button size="lg" variant="outline" className="border-sky-500/40 text-sky-300 hover:bg-sky-500/10 px-8 py-6 text-base rounded-lg">
-                View Blueprint
-              </Button>
+              <Link href="/marketplace">
+                <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 text-base px-8">
+                  <ShoppingBag className="w-5 h-5 mr-2" />
+                  Browse Marketplace
+                </Button>
+              </Link>
             </div>
 
-            {/* Mini stats */}
-            <div className="grid grid-cols-3 gap-4">
-              {[
-                { label: "Revenue Streams", value: "5", icon: DollarSign },
-                { label: "AI Agents", value: "5", icon: Bot },
-                { label: "Tests Passing", value: "29", icon: CheckCircle },
-              ].map(({ label, value, icon: Icon }) => (
-                <div key={label} className="glass-card rounded-lg p-3 text-center">
-                  <Icon className="w-4 h-4 text-amber-400 mx-auto mb-1" />
-                  <div className="text-xl font-bold text-white" style={{ fontFamily: "'Syne', sans-serif" }}>{value}</div>
-                  <div className="text-xs text-sky-300/60">{label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right: Dashboard mockup */}
-          <div className="hidden lg:block relative animate-float-up" style={{ animationDelay: "200ms" }}>
-            <div className="relative rounded-xl overflow-hidden neon-border-blue shadow-2xl shadow-sky-500/20">
-              <img
-                src="https://d2xsxph8kpxj0f.cloudfront.net/310519663307221380/BtMgYDmz9zuh95r9ZYuGVm/dashboard-mockup-TJP2WkNtqxWavn4cVddd47.webp"
-                alt="AI Marketplace Dashboard"
-                className="w-full"
-              />
-              {/* Live overlay badge */}
-              <div className="absolute top-4 right-4 flex items-center gap-1.5 bg-emerald-500/20 border border-emerald-500/40 rounded-full px-3 py-1">
-                <AgentDot />
-                <span className="text-emerald-300 text-xs font-medium">LIVE</span>
-              </div>
-            </div>
-            {/* Floating profit card */}
-            <div className="absolute -bottom-6 -left-6 glass-card-gold rounded-xl p-4 neon-border-gold shadow-xl">
-              <div className="text-xs text-amber-300/70 mb-1">Today's Profit</div>
-              <div className="text-2xl font-bold text-amber-400 animate-counter-glow" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                $2,847.33
-              </div>
-              <div className="text-xs text-emerald-400 mt-1">↑ 34% vs yesterday</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ── Revenue Streams ───────────────────────────────────────────────────────────
-function RevenueStreams() {
-  const streams = [
-    { icon: Package, title: "Dropshipping", desc: "CJDropshipping, DSers, EPROLO, Trendsi auto-fulfill thousands of products", margin: "50–150%", color: "sky" },
-    { icon: Store, title: "Vendor Commissions", desc: "Users open storefronts and sell their own products — you earn on every sale", margin: "10–20%", color: "amber" },
-    { icon: Gavel, title: "eBay-Style Auctions", desc: "Bidding engine lets users auction items — you collect a fee on every winning bid", margin: "5–10%", color: "emerald" },
-    { icon: Users, title: "P2P Listings", desc: "Facebook Marketplace-style local selling with listing fees per post", margin: "$0.50–$5", color: "purple" },
-    { icon: Megaphone, title: "Affiliate & Ads", desc: "Google AdSense, affiliate links, and sponsored placements generate passive income", margin: "Passive", color: "rose" },
-  ];
-
-  const colorMap: Record<string, string> = {
-    sky: "text-sky-400 border-sky-500/30 bg-sky-500/10",
-    amber: "text-amber-400 border-amber-500/30 bg-amber-500/10",
-    emerald: "text-emerald-400 border-emerald-500/30 bg-emerald-500/10",
-    purple: "text-purple-400 border-purple-500/30 bg-purple-500/10",
-    rose: "text-rose-400 border-rose-500/30 bg-rose-500/10",
-  };
-
-  return (
-    <section id="revenue" className="py-24 relative">
-      <div className="container">
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-card text-amber-300 text-xs font-medium mb-4 neon-border-gold">
-            <DollarSign className="w-3.5 h-3.5" />
-            <span>5 Revenue Streams</span>
-          </div>
-          <h2 className="text-4xl lg:text-5xl font-extrabold text-white mb-4" style={{ fontFamily: "'Syne', sans-serif" }}>
-            Money Flows From <span className="text-gradient-gold">Every Direction</span>
-          </h2>
-          <p className="text-sky-200/60 max-w-2xl mx-auto">
-            Unlike a standard dropshipping store, this platform generates revenue from five independent streams simultaneously — all automated, all deposited daily.
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {streams.map(({ icon: Icon, title, desc, margin, color }) => (
-            <div key={title} className={`glass-card rounded-xl p-6 border ${colorMap[color].split(" ")[1]} hover:scale-[1.02] transition-transform duration-200`}>
-              <div className={`w-10 h-10 rounded-lg ${colorMap[color].split(" ")[2]} flex items-center justify-center mb-4`}>
-                <Icon className={`w-5 h-5 ${colorMap[color].split(" ")[0]}`} />
-              </div>
-              <h3 className="text-white font-bold text-lg mb-2" style={{ fontFamily: "'Syne', sans-serif" }}>{title}</h3>
-              <p className="text-sky-200/60 text-sm leading-relaxed mb-4">{desc}</p>
-              <div className={`inline-flex items-center gap-1.5 text-sm font-bold ${colorMap[color].split(" ")[0]}`} style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                <TrendingUp className="w-3.5 h-3.5" />
-                {margin} margin
-              </div>
-            </div>
-          ))}
-
-          {/* Total revenue card */}
-          <div className="glass-card-gold rounded-xl p-6 neon-border-gold flex flex-col justify-between">
-            <div>
-              <div className="text-amber-300/70 text-sm mb-2">Projected Monthly Revenue</div>
-              <div className="text-4xl font-bold text-amber-400 mb-1 animate-counter-glow" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                <LiveCounter target={15000} />
-              </div>
-              <div className="text-amber-300/50 text-xs">at 20,000 monthly visitors</div>
-            </div>
-            <div className="mt-6 space-y-2">
-              {["Month 1-2: $200–$800", "Month 3-4: $1,500–$5,000", "Month 6: $5,000–$15,000", "Month 12: $20,000–$60,000+"].map(p => (
-                <div key={p} className="flex items-center gap-2 text-xs text-amber-200/70">
-                  <ChevronRight className="w-3 h-3 text-amber-400" />
-                  {p}
+            {/* Stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {STATS.map(({ value, label, icon: Icon }) => (
+                <div key={label} className="glass-card rounded-xl p-4 text-center">
+                  <Icon className="w-5 h-5 text-blue-400 mx-auto mb-2" />
+                  <div className="text-2xl font-bold text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{value}</div>
+                  <div className="text-xs text-gray-400">{label}</div>
                 </div>
               ))}
             </div>
           </div>
         </div>
-      </div>
-    </section>
-  );
-}
+      </section>
 
-// ── AI Agents Section ─────────────────────────────────────────────────────────
-function AgentsSection() {
-  const agents = [
-    { name: "CEO Agent", role: "Strategic Command", desc: "Orchestrates all agents, monitors KPIs, makes strategic decisions, and sends you a daily profit report.", schedule: "Daily 8PM", color: "amber", delay: 0 },
-    { name: "Product Manager", role: "Catalog Intelligence", desc: "Imports 50 trending products daily, reprices the catalog every 6 hours, and removes dead stock automatically.", schedule: "Daily 6AM", color: "sky", delay: 200 },
-    { name: "Marketing Agent", role: "Traffic Generation", desc: "Posts to 5 social platforms daily, publishes SEO-optimized blog content, and runs automated email campaigns.", schedule: "Daily 12PM", color: "emerald", delay: 400 },
-    { name: "Vendor Manager", role: "Community Operations", desc: "Approves new vendor applications, moderates listings, answers community questions, and manages auctions.", schedule: "Continuous", color: "purple", delay: 600 },
-    { name: "Finance Agent", role: "Profit Distribution", desc: "Splits commissions, pays vendors via Stripe Connect, and deposits your profit to your bank account daily.", schedule: "Daily 8PM", color: "rose", delay: 800 },
-  ];
-
-  const colorMap: Record<string, string> = {
-    amber: "from-amber-500/20 to-amber-600/5 border-amber-500/30 text-amber-400",
-    sky: "from-sky-500/20 to-sky-600/5 border-sky-500/30 text-sky-400",
-    emerald: "from-emerald-500/20 to-emerald-600/5 border-emerald-500/30 text-emerald-400",
-    purple: "from-purple-500/20 to-purple-600/5 border-purple-500/30 text-purple-400",
-    rose: "from-rose-500/20 to-rose-600/5 border-rose-500/30 text-rose-400",
-  };
-
-  return (
-    <section id="agents" className="py-24 relative">
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-sky-950/20 to-transparent pointer-events-none" />
-      <div className="container relative">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          {/* Left: Agent visual */}
-          <div className="relative">
-            <img
-              src="https://d2xsxph8kpxj0f.cloudfront.net/310519663307221380/BtMgYDmz9zuh95r9ZYuGVm/ai-agents-visual-EUsQkp7kJ7BmmiFHT2dmMg.webp"
-              alt="AI Agent Workforce"
-              className="w-full rounded-2xl shadow-2xl shadow-sky-500/10"
-            />
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-[oklch(0.08_0.02_240)]/60 to-transparent" />
-            {/* Status overlay */}
-            <div className="absolute bottom-6 left-6 right-6 glass-card rounded-xl p-4">
-              <div className="text-xs text-sky-300/60 mb-3 font-medium">AGENT STATUS — ALL SYSTEMS OPERATIONAL</div>
-              <div className="grid grid-cols-5 gap-2">
-                {["CEO", "PM", "MKT", "VND", "FIN"].map((a, i) => (
-                  <div key={a} className="text-center">
-                    <AgentDot delay={i * 300} />
-                    <div className="text-xs text-sky-300/50 mt-1">{a}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Right: Agent cards */}
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-card text-sky-300 text-xs font-medium mb-4 neon-border-blue">
-              <Brain className="w-3.5 h-3.5" />
-              <span>CrewAI Agent Workforce</span>
-            </div>
-            <h2 className="text-4xl lg:text-5xl font-extrabold text-white mb-4" style={{ fontFamily: "'Syne', sans-serif" }}>
-              5 AI Agents.<br /><span className="text-gradient-blue">Zero Employees.</span>
+      {/* Features Grid */}
+      <section className="py-20 relative">
+        <div className="container">
+          <div className="text-center mb-12">
+            <Badge className="mb-4 bg-purple-500/20 text-purple-300 border-purple-500/30">Everything You Need</Badge>
+            <h2 className="text-4xl font-bold text-gradient-blue mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              One Platform. Infinite Possibilities.
             </h2>
-            <p className="text-sky-200/60 mb-8 leading-relaxed">
-              A specialized crew of AI agents manages every aspect of your marketplace around the clock. They coordinate, compete, and collaborate — just like a real team, but without salaries, sick days, or mistakes.
+            <p className="text-gray-400 max-w-xl mx-auto">
+              Create, sell, discover, and connect — all powered by AI and running autonomously 24/7.
             </p>
+          </div>
 
-            <div className="space-y-3">
-              {agents.map(({ name, role, desc, schedule, color, delay }) => (
-                <div
-                  key={name}
-                  className={`rounded-xl p-4 bg-gradient-to-r border ${colorMap[color]} hover:scale-[1.01] transition-transform duration-200`}
-                  style={{ animationDelay: `${delay}ms` }}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <AgentDot delay={delay} />
-                      <div>
-                        <div className="font-bold text-white text-sm" style={{ fontFamily: "'Syne', sans-serif" }}>{name}</div>
-                        <div className={`text-xs ${colorMap[color].split(" ")[3]}`}>{role}</div>
-                      </div>
-                    </div>
-                    <div className="text-xs text-sky-300/40 whitespace-nowrap" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{schedule}</div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {FEATURES.map(({ icon: Icon, label, desc, color, bg, href }) => (
+              <Link key={label} href={href}>
+                <Card className="glass-card border-white/10 p-5 hover:border-blue-500/40 transition-all group cursor-pointer hover:scale-105">
+                  <div className={`w-10 h-10 ${bg} rounded-lg flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                    <Icon className={`w-5 h-5 ${color}`} />
                   </div>
-                  <p className="text-sky-200/50 text-xs mt-2 leading-relaxed pl-6">{desc}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ── Integrations ──────────────────────────────────────────────────────────────
-function Integrations() {
-  const integrations = [
-    { category: "Dropshippers", items: ["CJDropshipping", "DSers", "EPROLO", "Trendsi", "Spocket"] },
-    { category: "Automation", items: ["n8n (2,053 workflows)", "CrewAI", "Zapier", "Make.com", "APScheduler"] },
-    { category: "Marketing", items: ["Outfy (5 platforms)", "Brevo Email", "Google SEO", "Reddit API", "Google Trends"] },
-    { category: "Payments", items: ["Shopify Payments", "Stripe Connect", "PayPal", "Apple Pay", "Google Pay"] },
-    { category: "GitHub Repos", items: ["awesome-shopify", "shopify-mcp", "n8n-templates", "crewAI", "prisync-api"] },
-    { category: "MCP Servers", items: ["Shopify MCP", "Stripe MCP", "Gmail MCP", "Slack MCP", "Google Calendar"] },
-  ];
-
-  return (
-    <section id="integrations" className="py-24">
-      <div className="container">
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-card text-sky-300 text-xs font-medium mb-4 neon-border-blue">
-            <Globe className="w-3.5 h-3.5" />
-            <span>50+ Integrations</span>
-          </div>
-          <h2 className="text-4xl lg:text-5xl font-extrabold text-white mb-4" style={{ fontFamily: "'Syne', sans-serif" }}>
-            Every Tool. <span className="text-gradient-blue">Every Platform.</span><br />
-            All Connected.
-          </h2>
-          <p className="text-sky-200/60 max-w-2xl mx-auto">
-            The system integrates with every major dropshipper, automation platform, marketing tool, and payment processor — all free or open-source.
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {integrations.map(({ category, items }) => (
-            <div key={category} className="glass-card rounded-xl p-5 neon-border-blue">
-              <h3 className="text-sky-400 font-bold text-sm mb-4 uppercase tracking-wider" style={{ fontFamily: "'Syne', sans-serif" }}>
-                {category}
-              </h3>
-              <div className="space-y-2">
-                {items.map(item => (
-                  <div key={item} className="flex items-center gap-2.5 text-sm text-sky-100/70">
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ── Stats Bar ─────────────────────────────────────────────────────────────────
-function StatsBar() {
-  const stats = [
-    { label: "GitHub Repos Integrated", value: 15, suffix: "" },
-    { label: "n8n Workflow Templates", value: 2053, suffix: "+" },
-    { label: "Bugs Found & Fixed", value: 25, suffix: "" },
-    { label: "Tests Passing", value: 29, suffix: "/29" },
-    { label: "Workflow Nodes", value: 36, suffix: "" },
-    { label: "Revenue Streams", value: 5, suffix: "" },
-  ];
-
-  return (
-    <section className="py-16 bg-[oklch(0.10_0.025_240)] border-y border-[rgba(14,165,233,0.15)]">
-      <div className="container">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
-          {stats.map(({ label, value, suffix }) => (
-            <div key={label} className="text-center">
-              <div className="text-3xl font-bold text-amber-400 mb-1 animate-counter-glow" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-                <LiveCounter target={value} prefix="" suffix={suffix} />
-              </div>
-              <div className="text-xs text-sky-300/50">{label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ── Features Grid ─────────────────────────────────────────────────────────────
-function Features() {
-  const features = [
-    { icon: Zap, title: "Instant Product Import", desc: "Import thousands of products from CJDropshipping, DSers, and EPROLO with one click. Prices, images, and descriptions auto-populated." },
-    { icon: TrendingUp, title: "Dynamic Pricing Engine", desc: "Prices update every 6 hours based on competitor analysis, demand signals, and your configured margin floors and ceilings." },
-    { icon: BarChart3, title: "Daily Profit Reports", desc: "The CEO Agent emails you a full performance report every evening — revenue, margins, top products, and next-day strategy." },
-    { icon: Shield, title: "Fully Audited Code", desc: "25 bugs found and fixed. 29 unit tests passing. All 15 GitHub repos verified live. Production-ready from day one." },
-    { icon: Star, title: "Social Commerce Layer", desc: "Growave adds loyalty points, wishlists, reviews, and social profiles — turning your store into a community marketplace." },
-    { icon: ShoppingCart, title: "Abandoned Cart Recovery", desc: "3-email recovery sequence fires automatically: 1hr gentle reminder, 24hr with 10% discount code, final urgency email." },
-  ];
-
-  return (
-    <section id="features" className="py-24">
-      <div className="container">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl lg:text-5xl font-extrabold text-white mb-4" style={{ fontFamily: "'Syne', sans-serif" }}>
-            Built to Run <span className="text-gradient-blue">Without You</span>
-          </h2>
-          <p className="text-sky-200/60 max-w-2xl mx-auto">
-            Every feature is designed for maximum automation and minimum intervention. Set it up once, collect profits indefinitely.
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {features.map(({ icon: Icon, title, desc }) => (
-            <div key={title} className="glass-card rounded-xl p-6 hover:neon-border-blue transition-all duration-300 group">
-              <div className="w-10 h-10 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center mb-4 group-hover:bg-sky-500/20 transition-colors">
-                <Icon className="w-5 h-5 text-sky-400" />
-              </div>
-              <h3 className="text-white font-bold mb-2" style={{ fontFamily: "'Syne', sans-serif" }}>{title}</h3>
-              <p className="text-sky-200/55 text-sm leading-relaxed">{desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ── CTA Section ───────────────────────────────────────────────────────────────
-function CTA() {
-  return (
-    <section className="py-24 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-r from-sky-950/50 via-[oklch(0.08_0.02_240)] to-amber-950/30" />
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl" />
-
-      <div className="container relative text-center">
-        <div className="max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full glass-card text-emerald-300 text-xs font-medium mb-6 border border-emerald-500/30">
-            <AgentDot />
-            <span>System Ready — Deploy in Minutes</span>
-          </div>
-
-          <h2 className="text-5xl lg:text-6xl font-extrabold text-white mb-6" style={{ fontFamily: "'Syne', sans-serif" }}>
-            Start Earning<br /><span className="text-gradient-gold">Today.</span>
-          </h2>
-
-          <p className="text-sky-200/60 text-lg mb-10 leading-relaxed">
-            The blueprint is complete. The code is audited. The agents are ready. All you need is a Shopify account and 30 minutes to deploy.
-          </p>
-
-          <div className="flex flex-wrap gap-4 justify-center mb-12">
-            <Button size="lg" className="bg-amber-500 hover:bg-amber-400 text-black font-bold px-10 py-6 text-base rounded-lg shadow-lg shadow-amber-500/30">
-              Download Blueprint <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-            <Button size="lg" variant="outline" className="border-sky-500/40 text-sky-300 hover:bg-sky-500/10 px-10 py-6 text-base rounded-lg">
-              View GitHub Repo
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-3 gap-6 max-w-lg mx-auto">
-            {[
-              { label: "Setup Time", value: "30 min" },
-              { label: "Monthly Cost", value: "$29" },
-              { label: "First Sale", value: "Day 1" },
-            ].map(({ label, value }) => (
-              <div key={label} className="text-center">
-                <div className="text-2xl font-bold text-amber-400 mb-1" style={{ fontFamily: "'JetBrains Mono', monospace" }}>{value}</div>
-                <div className="text-xs text-sky-300/50">{label}</div>
-              </div>
+                  <div className="font-semibold text-white text-sm mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{label}</div>
+                  <div className="text-xs text-gray-400 leading-relaxed">{desc}</div>
+                  <ChevronRight className={`w-3 h-3 ${color} mt-2 group-hover:translate-x-1 transition-transform`} />
+                </Card>
+              </Link>
             ))}
           </div>
         </div>
-      </div>
-    </section>
-  );
-}
+      </section>
 
-// ── Footer ────────────────────────────────────────────────────────────────────
-function Footer() {
-  return (
-    <footer className="border-t border-[rgba(14,165,233,0.15)] py-10">
-      <div className="container flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-sky-500 to-blue-700 flex items-center justify-center">
-            <Bot className="w-3.5 h-3.5 text-white" />
+      {/* Creator Studio Preview */}
+      <section className="py-20 relative overflow-hidden">
+        <div className="container">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <Badge className="mb-4 bg-purple-500/20 text-purple-300 border-purple-500/30">Creator Studio</Badge>
+              <h2 className="text-4xl font-bold text-white mb-6" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                Your AI-Powered
+                <br />
+                <span className="text-gradient-rainbow">Creative Workspace</span>
+              </h2>
+              <p className="text-gray-400 mb-8 leading-relaxed">
+                Everything a creator needs in one place. Generate music with AI, edit videos, write eBooks,
+                publish blogs, and sell your work — all with free, integrated tools.
+              </p>
+              <div className="space-y-3 mb-8">
+                {[
+                  { icon: Music, text: "AI Music & Song Generation (Suno AI, AudioCraft, MusicGen)" },
+                  { icon: Video, text: "AI Video Generation & Editing (Runway, CapCut, FFmpeg)" },
+                  { icon: PenTool, text: "Writing Workshop — Blogs, Stories, Academic Papers" },
+                  { icon: BookOpen, text: "eBook Generator & Publisher (Calibre, Pandoc, epub.js)" },
+                  { icon: Upload, text: "Upload Photos, Videos, Audio & Files" },
+                  { icon: Copyright, text: "Auto-Copyright & DMCA Protection" },
+                  { icon: Download, text: "Download, Watermark & Distribute" },
+                ].map(({ icon: Icon, text }) => (
+                  <div key={text} className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-purple-500/20 rounded flex items-center justify-center shrink-0 mt-0.5">
+                      <Icon className="w-3.5 h-3.5 text-purple-400" />
+                    </div>
+                    <span className="text-sm text-gray-300">{text}</span>
+                  </div>
+                ))}
+              </div>
+              <Link href="/studio">
+                <Button className="bg-gradient-to-r from-purple-600 to-blue-600 text-white border-0">
+                  Open Creator Studio <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+            </div>
+            <div className="relative">
+              <div className="rounded-2xl overflow-hidden glow-purple">
+                <img src={CREATOR_IMG} alt="Creator Studio" className="w-full object-cover" />
+              </div>
+              <div className="absolute -bottom-4 -right-4 glass-card rounded-xl p-4 neon-border-blue">
+                <div className="flex items-center gap-2 text-sm">
+                  <Sparkles className="w-4 h-4 text-yellow-400" />
+                  <span className="text-white font-medium">AI generating your track...</span>
+                </div>
+                <div className="mt-2 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                  <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full w-3/4 animate-pulse" />
+                </div>
+              </div>
+            </div>
           </div>
-          <span className="font-bold text-white" style={{ fontFamily: "'Syne', sans-serif" }}>
-            AI<span className="text-amber-400">Market</span>
-          </span>
         </div>
-        <div className="text-sky-300/40 text-sm">
-          Fully automated. Fully audited. Fully yours.
-        </div>
-        <div className="flex items-center gap-1.5 text-xs text-sky-300/30" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-          <AgentDot delay={0} />
-          All systems operational
-        </div>
-      </div>
-    </footer>
-  );
-}
+      </section>
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
-export default function Home() {
-  return (
-    <div className="min-h-screen bg-[oklch(0.08_0.02_240)]">
-      <Nav />
-      <Hero />
-      <LiveTicker />
-      <StatsBar />
-      <RevenueStreams />
-      <AgentsSection />
-      <Features />
-      <Integrations />
-      <CTA />
-      <Footer />
+      {/* Social Feed Preview */}
+      <section className="py-20 relative overflow-hidden">
+        <div className="container">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="relative order-2 lg:order-1">
+              <div className="rounded-2xl overflow-hidden glow-blue">
+                <img src={FEED_IMG} alt="Social Feed" className="w-full object-cover" />
+              </div>
+              <div className="absolute -top-4 -left-4 glass-card rounded-xl p-3 neon-border-gold">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-400 rounded-full pulse-live" />
+                  <span className="text-xs text-gray-300">1,247 creators online</span>
+                </div>
+              </div>
+            </div>
+            <div className="order-1 lg:order-2">
+              <Badge className="mb-4 bg-blue-500/20 text-blue-300 border-blue-500/30">Social Feed</Badge>
+              <h2 className="text-4xl font-bold text-white mb-6" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                A Social Network
+                <br />
+                <span className="text-gradient-blue">Built for Creators</span>
+              </h2>
+              <p className="text-gray-400 mb-8 leading-relaxed">
+                A Facebook-style social experience designed for creators and buyers.
+                Share your work, discover trending content, chat with fans, and sell — all in one feed.
+              </p>
+              <div className="grid grid-cols-2 gap-3 mb-8">
+                {[
+                  { icon: Rss2, label: "Newsfeed", desc: "Personalized content stream" },
+                  { icon: TrendingUp, label: "Trending", desc: "What's hot right now" },
+                  { icon: MessageCircle, label: "Chat", desc: "Direct messages & groups" },
+                  { icon: Eye, label: "Stories", desc: "24-hour content previews" },
+                  { icon: Heart, label: "Reactions", desc: "Like, love, and share" },
+                  { icon: ShoppingBag, label: "Buy Direct", desc: "Purchase from the feed" },
+                ].map(({ icon: Icon, label, desc }) => (
+                  <div key={label} className="glass-card rounded-lg p-3 flex items-start gap-2">
+                    <Icon className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
+                    <div>
+                      <div className="text-sm font-medium text-white">{label}</div>
+                      <div className="text-xs text-gray-400">{desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Link href="/feed">
+                <Button className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-0">
+                  Explore the Feed <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Trending Content */}
+      <section className="py-20 relative">
+        <div className="container">
+          <div className="flex items-center justify-between mb-10">
+            <div>
+              <Badge className="mb-2 bg-amber-500/20 text-amber-300 border-amber-500/30">Trending Now</Badge>
+              <h2 className="text-3xl font-bold text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                Hot Content Today
+              </h2>
+            </div>
+            <Link href="/marketplace">
+              <Button variant="outline" size="sm" className="border-white/20 text-gray-300 hover:bg-white/10">
+                View All <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </Link>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {TRENDING_CONTENT.map((item) => (
+              <Card key={item.title} className="glass-card border-white/10 overflow-hidden group hover:border-blue-500/30 transition-all cursor-pointer"
+                onClick={() => toast.info(`"${item.title}" — Available in Marketplace`)}>
+                <div className={`h-32 bg-gradient-to-br ${item.color} flex items-center justify-center relative`}>
+                  <Play className="w-10 h-10 text-white/80 group-hover:scale-110 transition-transform" />
+                  <Badge className="absolute top-2 left-2 text-xs bg-black/40 text-white border-0">{item.type}</Badge>
+                  <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-0.5 rounded-full font-bold">{item.price}</div>
+                </div>
+                <div className="p-4">
+                  <div className="font-semibold text-white text-sm mb-1 truncate">{item.title}</div>
+                  <div className="text-xs text-gray-400 mb-3">by {item.creator}</div>
+                  <div className="flex items-center gap-3 text-xs text-gray-400">
+                    <span className="flex items-center gap-1"><Heart className="w-3 h-3 text-pink-400" />{item.likes}</span>
+                    <span className="flex items-center gap-1"><Eye className="w-3 h-3 text-blue-400" />{item.views}</span>
+                    <span className="flex items-center gap-1"><Share2 className="w-3 h-3 text-green-400" />Share</span>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Marketplace Preview */}
+      <section className="py-20 relative overflow-hidden">
+        <div className="container">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <Badge className="mb-4 bg-yellow-500/20 text-yellow-300 border-yellow-500/30">Marketplace</Badge>
+              <h2 className="text-4xl font-bold text-white mb-6" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                Shop, Sell & Auction
+                <br />
+                <span className="text-gradient-gold">Everything Imaginable</span>
+              </h2>
+              <p className="text-gray-400 mb-8 leading-relaxed">
+                A virtual mall combining Amazon dropshipping, eBay auctions, Facebook Marketplace peer-to-peer sales,
+                and a digital content store — all in one place.
+              </p>
+              <div className="grid grid-cols-3 gap-3 mb-8">
+                {[
+                  { label: "Dropship Products", value: "50K+" },
+                  { label: "Active Vendors", value: "1,200+" },
+                  { label: "Daily Auctions", value: "340+" },
+                ].map(({ label, value }) => (
+                  <div key={label} className="glass-card rounded-xl p-4 text-center neon-border-gold">
+                    <div className="text-2xl font-bold text-gradient-gold mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{value}</div>
+                    <div className="text-xs text-gray-400">{label}</div>
+                  </div>
+                ))}
+              </div>
+              <Link href="/marketplace">
+                <Button className="bg-gradient-to-r from-yellow-600 to-orange-600 text-white border-0">
+                  Browse Marketplace <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+            </div>
+            <div className="relative">
+              <div className="rounded-2xl overflow-hidden glow-gold">
+                <img src={MARKET_IMG} alt="Marketplace" className="w-full object-cover" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Revenue Streams */}
+      <section className="py-20 relative">
+        <div className="container">
+          <div className="text-center mb-12">
+            <Badge className="mb-4 bg-green-500/20 text-green-300 border-green-500/30">Revenue Engine</Badge>
+            <h2 className="text-4xl font-bold text-white mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              6 Revenue Streams.
+              <br />
+              <span className="text-gradient-gold">All Automated.</span>
+            </h2>
+            <p className="text-gray-400 max-w-xl mx-auto">
+              Every sale, every click, every listing — profit flows automatically to your account 24/7.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {REVENUE_STREAMS.map(({ icon: Icon, title, pct, desc }) => (
+              <Card key={title} className="glass-card border-white/10 p-6 hover:border-green-500/30 transition-all">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center shrink-0">
+                    <Icon className="w-5 h-5 text-green-400" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-white mb-1">{title}</div>
+                    <div className="text-xl font-bold text-gradient-gold mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{pct}</div>
+                    <div className="text-xs text-gray-400">{desc}</div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* AI Agents */}
+      <section className="py-20 relative">
+        <div className="container">
+          <div className="text-center mb-12">
+            <Badge className="mb-4 bg-blue-500/20 text-blue-300 border-blue-500/30">AI Workforce</Badge>
+            <h2 className="text-4xl font-bold text-white mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              5 AI Agents.
+              <br />
+              <span className="text-gradient-blue">Running Everything.</span>
+            </h2>
+          </div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {AI_AGENTS.map((agent) => (
+              <Card key={agent.name} className="glass-card border-white/10 p-5 text-center hover:border-blue-500/30 transition-all">
+                <div className="w-12 h-12 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-3 glow-blue">
+                  <Bot className="w-6 h-6 text-blue-400" />
+                </div>
+                <div className="flex items-center justify-center gap-1.5 mb-2">
+                  <span className="w-2 h-2 bg-green-400 rounded-full pulse-live" />
+                  <span className="text-xs text-green-400 font-medium">ACTIVE</span>
+                </div>
+                <div className="font-semibold text-white text-sm mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{agent.name}</div>
+                <div className="text-xs text-blue-400 mb-2">{agent.time}</div>
+                <div className="text-xs text-gray-400">{agent.task}</div>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Spotlight Preview */}
+      <section className="py-20 relative overflow-hidden">
+        <div className="container">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="relative">
+              <div className="rounded-2xl overflow-hidden glow-gold">
+                <img src={SPOTLIGHT_IMG} alt="Daily Spotlight" className="w-full object-cover" />
+              </div>
+            </div>
+            <div>
+              <Badge className="mb-4 bg-amber-500/20 text-amber-300 border-amber-500/30">Daily Spotlight</Badge>
+              <h2 className="text-4xl font-bold text-white mb-6" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                Your Moment
+                <br />
+                <span className="text-gradient-gold">In the Spotlight</span>
+              </h2>
+              <p className="text-gray-400 mb-8 leading-relaxed">
+                Every day, our AI curates the most impressive, creative, and popular content.
+                Featured creators get massive exposure — and a surge in sales.
+              </p>
+              <div className="space-y-3 mb-8">
+                {[
+                  "🏆 Most Creative Content of the Day",
+                  "🔥 Most Popular by Community Votes",
+                  "⭐ Editor's Pick by AI Curation",
+                  "📈 Fastest Rising Creator",
+                  "💎 Best-Selling Vendor of the Week",
+                ].map(cat => (
+                  <div key={cat} className="flex items-center gap-3 glass-card rounded-lg px-4 py-2.5">
+                    <span className="text-sm text-gray-200">{cat}</span>
+                  </div>
+                ))}
+              </div>
+              <Link href="/spotlight">
+                <Button className="bg-gradient-to-r from-amber-600 to-yellow-600 text-white border-0">
+                  <Star className="w-4 h-4 mr-2" />
+                  See Today's Spotlight
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Integrations teaser */}
+      <section className="py-20 relative">
+        <div className="container">
+          <div className="glass-card rounded-3xl p-10 text-center neon-border-blue">
+            <Badge className="mb-4 bg-blue-500/20 text-blue-300 border-blue-500/30">
+              <Zap className="w-3 h-3 mr-1" /> 200+ Integrations
+            </Badge>
+            <h2 className="text-4xl font-bold text-white mb-4" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              Powered by the World's Best
+              <br />
+              <span className="text-gradient-blue">AI Tools & APIs</span>
+            </h2>
+            <p className="text-gray-400 mb-8 max-w-xl mx-auto">
+              MCP servers, GitHub repos, AI agents, free APIs, social platforms, payment processors —
+              all integrated and running autonomously.
+            </p>
+            <div className="flex flex-wrap gap-2 justify-center mb-8">
+              {["CrewAI", "n8n", "Shopify", "Stripe Connect", "CJDropshipping", "Suno AI", "Runway ML",
+                "Google AdSense", "Brevo", "Outfy", "Growave", "Webkul", "Calibre", "Pandoc", "FFmpeg",
+                "AudioCraft", "Meta MusicGen", "TipTap", "Ghost CMS", "Discourse"].map(tool => (
+                <Badge key={tool} variant="outline" className="text-xs border-white/20 text-gray-300">{tool}</Badge>
+              ))}
+            </div>
+            <Link href="/integrations">
+              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0">
+                View All Integrations <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-24 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-blue-600/10" />
+        <div className="container relative z-10 text-center">
+          <h2 className="text-5xl font-bold text-white mb-6" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+            Ready to Build Your
+            <br />
+            <span className="text-gradient-rainbow">Autonomous Empire?</span>
+          </h2>
+          <p className="text-xl text-gray-300 mb-10 max-w-xl mx-auto">
+            Join NEXUS today. Create, sell, and earn — while AI handles everything else.
+          </p>
+          <div className="flex flex-wrap gap-4 justify-center">
+            <Button
+              size="lg"
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white border-0 text-lg px-10 py-6 glow-blue"
+              onClick={() => toast.success("You're on the waitlist! We'll notify you at launch.")}
+            >
+              <Rocket className="w-5 h-5 mr-2" />
+              Join the Waitlist — Free
+            </Button>
+            <Link href="/vendor">
+              <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 text-lg px-10 py-6">
+                <Store className="w-5 h-5 mr-2" />
+                Open Your Store
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-white/10 py-10">
+        <div className="container">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                  <Zap className="w-3.5 h-3.5 text-white" />
+                </div>
+                <span className="font-bold text-white" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>NEXUS</span>
+              </div>
+              <p className="text-xs text-gray-400 leading-relaxed">
+                The world's first fully autonomous AI-powered social content marketplace.
+              </p>
+            </div>
+            {[
+              { title: "Platform", links: ["Social Feed", "Creator Studio", "Marketplace", "Vendor Portal", "Spotlight"] },
+              { title: "Create", links: ["AI Music", "AI Video", "Writing Workshop", "eBook Publisher", "Upload Content"] },
+              { title: "Earn", links: ["Dropshipping", "Sell Content", "Auctions", "Affiliate Program", "Ad Revenue"] },
+            ].map(({ title, links }) => (
+              <div key={title}>
+                <div className="font-semibold text-white text-sm mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{title}</div>
+                <div className="space-y-2">
+                  {links.map(link => (
+                    <div key={link} className="text-xs text-gray-400 hover:text-white cursor-pointer transition-colors"
+                      onClick={() => toast.info(`${link} — Coming soon!`)}>{link}</div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="border-t border-white/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-xs text-gray-500">© 2026 NEXUS Marketplace. All rights reserved.</div>
+            <div className="flex items-center gap-2">
+              <Shield className="w-3 h-3 text-green-400" />
+              <span className="text-xs text-gray-500">Secured by AI. Powered by automation.</span>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
