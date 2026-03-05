@@ -11,6 +11,12 @@ import { desc, eq, and, like, sql } from "drizzle-orm";
 import { z } from "zod";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
+import {
+  createConnectAccount,
+  getConnectAccountStatus,
+  createContentCheckout,
+  createProductCheckout,
+} from "./stripe";
 
 // ─── Feed Router ──────────────────────────────────────────────────────────────
 const feedRouter = router({
@@ -348,6 +354,78 @@ export const appRouter = router({
   marketplace: marketplaceRouter,
   vendor: vendorRouter,
   agent: agentRouter,
+  stripe: router({
+    // Create or refresh Stripe Connect onboarding link for vendors
+    connectOnboard: protectedProcedure
+      .input(z.object({ origin: z.string().url() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+        const userRow = await db.select().from(users).where(eq(users.openId, ctx.user.openId)).limit(1);
+        if (!userRow[0]) throw new Error("User not found");
+        const email = userRow[0].email ?? ctx.user.email ?? "";
+        return createConnectAccount(userRow[0].id, email, input.origin);
+      }),
+
+    // Get vendor's Connect account status
+    connectStatus: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return null;
+      const userRow = await db.select().from(users).where(eq(users.openId, ctx.user.openId)).limit(1);
+      if (!userRow[0]) return null;
+      return getConnectAccountStatus(userRow[0].id);
+    }),
+
+    // Create checkout session for content purchase
+    buyContent: protectedProcedure
+      .input(z.object({ contentItemId: z.number(), origin: z.string().url() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+        const userRow = await db.select().from(users).where(eq(users.openId, ctx.user.openId)).limit(1);
+        if (!userRow[0]) throw new Error("User not found");
+        const email = userRow[0].email ?? ctx.user.email ?? "";
+        return createContentCheckout(input.contentItemId, email, userRow[0].id, input.origin);
+      }),
+
+    // Create checkout session for product purchase
+    buyProduct: protectedProcedure
+      .input(z.object({ productId: z.number(), origin: z.string().url() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+        const userRow = await db.select().from(users).where(eq(users.openId, ctx.user.openId)).limit(1);
+        if (!userRow[0]) throw new Error("User not found");
+        const email = userRow[0].email ?? ctx.user.email ?? "";
+        return createProductCheckout(input.productId, email, userRow[0].id, input.origin);
+      }),
+
+    // Get user's order history
+    myOrders: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const userRow = await db.select().from(users).where(eq(users.openId, ctx.user.openId)).limit(1);
+      if (!userRow[0]) return [];
+      return db.select().from(orders)
+        .where(eq(orders.buyerId, userRow[0].id))
+        .orderBy(desc(orders.createdAt))
+        .limit(50);
+    }),
+
+    // Get vendor's earnings summary
+    vendorEarnings: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { totalEarnings: "0.00", orderCount: 0, orders: [] };
+      const userRow = await db.select().from(users).where(eq(users.openId, ctx.user.openId)).limit(1);
+      if (!userRow[0]) return { totalEarnings: "0.00", orderCount: 0, orders: [] };
+      const vendorOrders = await db.select().from(orders)
+        .where(and(eq(orders.sellerId, userRow[0].id), eq(orders.status, "paid")))
+        .orderBy(desc(orders.createdAt))
+        .limit(50);
+      const totalEarnings = vendorOrders.reduce((sum, o) => sum + parseFloat(o.vendorPayout ?? "0"), 0);
+      return { totalEarnings: totalEarnings.toFixed(2), orderCount: vendorOrders.length, orders: vendorOrders };
+    }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

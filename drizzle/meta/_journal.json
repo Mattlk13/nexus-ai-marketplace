@@ -15,6 +15,13 @@
       "when": 1772696936296,
       "tag": "0001_known_siren",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1772733705160,
+      "tag": "0002_sleepy_midnight",
+      "breakpoints": true
     }
   ]
 }

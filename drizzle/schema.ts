@@ -205,3 +205,39 @@ export const seoPages = mysqlTable("seo_pages", {
 });
 
 export type SeoPage = typeof seoPages.$inferSelect;
+
+// ─── Stripe Connect Accounts ─────────────────────────────────────────────────
+export const stripeAccounts = mysqlTable("stripe_accounts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  stripeAccountId: varchar("stripeAccountId", { length: 128 }).notNull().unique(),
+  accountStatus: mysqlEnum("accountStatus", ["pending", "active", "restricted", "disabled"]).default("pending"),
+  chargesEnabled: boolean("chargesEnabled").default(false),
+  payoutsEnabled: boolean("payoutsEnabled").default(false),
+  detailsSubmitted: boolean("detailsSubmitted").default(false),
+  country: varchar("country", { length: 2 }).default("US"),
+  currency: varchar("currency", { length: 3 }).default("usd"),
+  totalEarned: decimal("totalEarned", { precision: 12, scale: 2 }).default("0.00"),
+  totalPaidOut: decimal("totalPaidOut", { precision: 12, scale: 2 }).default("0.00"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type StripeAccount = typeof stripeAccounts.$inferSelect;
+export type InsertStripeAccount = typeof stripeAccounts.$inferInsert;
+
+// ─── Stripe Products (for content and marketplace items) ──────────────────────
+export const stripeProducts = mysqlTable("stripe_products", {
+  id: int("id").autoincrement().primaryKey(),
+  contentItemId: int("contentItemId"),
+  productId: int("productId"),
+  stripeProductId: varchar("stripeProductId", { length: 128 }).notNull(),
+  stripePriceId: varchar("stripePriceId", { length: 128 }).notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 3 }).default("usd"),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type StripeProduct = typeof stripeProducts.$inferSelect;
+export type InsertStripeProduct = typeof stripeProducts.$inferInsert;

@@ -123,7 +123,22 @@
 - [ ] Mobile app scaffold (React Native / Expo)
 
 ## Stripe Integration (from conversation)
-- [ ] Add Stripe Connect for vendor payouts
-- [ ] Add Stripe Checkout for content purchases
+- [x] Add Stripe Connect for vendor payouts
+- [x] Add Stripe Checkout for content purchases
 - [ ] Add Stripe subscription billing for premium vendor tier
-- [ ] Revenue split automation (platform % + vendor %)
+- [x] Revenue split automation (platform % + vendor %)
+
+## Stripe Connect Integration
+- [x] Run webdev_add_feature stripe upgrade
+- [x] Build Stripe Connect onboarding flow for vendors
+- [x] Build Stripe Checkout for content and product purchases
+- [x] Build revenue split logic (15% platform fee, 85% vendor)
+- [x] Add payout dashboard to Vendor Portal
+- [x] Add purchase buttons to Marketplace and Spotlight pages
+- [x] Write Stripe vitest tests (11 tests passing)
+
+## Google AdSense & Search Console
+- [x] Add Google AdSense auto-ads script to index.html
+- [x] Replace AdSense placeholder banners with real ad units on Feed and Spotlight
+- [x] Add Google Search Console verification meta tag to index.html
+- [ ] Add structured data (JSON-LD) schema markup to Home page

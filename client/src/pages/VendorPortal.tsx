@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import NavBar from "@/components/NavBar";
 import { Link, useLocation } from "wouter";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -51,6 +53,31 @@ export default function VendorPortal() {
   useEffect(() => { document.title = "Vendor Portal — Sell Your Creations | NEXUS"; }, []);
   const [isVendor] = useState(true); // Demo: show vendor dashboard
   const [, navigate] = useLocation();
+  const { isAuthenticated } = useAuth();
+  const [stripeLoading, setStripeLoading] = useState(false);
+
+  const { data: connectStatus } = trpc.stripe.connectStatus.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+  const connectOnboard = trpc.stripe.connectOnboard.useMutation({
+    onSuccess: (data) => {
+      window.open(data.url, "_blank");
+      toast.success("Opening Stripe onboarding — complete it to start receiving payouts!");
+    },
+    onError: (err) => {
+      toast.error(`Stripe error: ${err.message}`);
+      setStripeLoading(false);
+    },
+  });
+  const { data: vendorEarnings } = trpc.stripe.vendorEarnings.useQuery(undefined, {
+    enabled: isAuthenticated,
+  });
+
+  const handleStripeConnect = () => {
+    if (!isAuthenticated) { navigate("/"); return; }
+    setStripeLoading(true);
+    connectOnboard.mutate({ origin: window.location.origin });
+  };
 
   return (
     <div className="min-h-screen animated-bg">
@@ -85,6 +112,52 @@ export default function VendorPortal() {
           {isVendor ? (
             // Vendor Dashboard View
             <div className="space-y-6">
+              {/* Stripe Connect Banner */}
+              {!connectStatus?.chargesEnabled && (
+                <Card className="glass-card border-yellow-500/30 p-5 bg-gradient-to-r from-yellow-600/10 to-orange-600/10">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center">
+                        <DollarSign className="w-6 h-6 text-yellow-400" />
+                      </div>
+                      <div>
+                        <div className="font-bold text-white text-base" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+                          {connectStatus ? "Complete Stripe Setup" : "Connect Stripe to Receive Payouts"}
+                        </div>
+                        <div className="text-sm text-gray-400">
+                          {connectStatus?.detailsSubmitted
+                            ? "Your account is under review — payouts will activate shortly."
+                            : "Set up your Stripe account to receive daily profit deposits directly to your bank."}
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      className="bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-bold border-0 shrink-0"
+                      onClick={handleStripeConnect}
+                      disabled={stripeLoading || connectOnboard.isPending}
+                    >
+                      {stripeLoading || connectOnboard.isPending ? "Opening..." : connectStatus ? "Continue Setup" : "Connect Stripe"}
+                    </Button>
+                  </div>
+                </Card>
+              )}
+              {connectStatus?.chargesEnabled && (
+                <Card className="glass-card border-green-500/30 p-5 bg-gradient-to-r from-green-600/10 to-emerald-600/10">
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+                        <CheckCircle className="w-6 h-6 text-green-400" />
+                      </div>
+                      <div>
+                        <div className="font-bold text-white text-base" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Stripe Payouts Active</div>
+                        <div className="text-sm text-gray-400">Total earned: <span className="text-green-400 font-semibold">${vendorEarnings?.totalEarnings ?? "0.00"}</span> across {vendorEarnings?.orderCount ?? 0} sales</div>
+                      </div>
+                    </div>
+                    <Badge className="bg-green-500/20 text-green-300 border-green-500/30 text-sm px-3 py-1">✓ Connected</Badge>
+                  </div>
+                </Card>
+              )}
+
               {/* Stats */}
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {VENDOR_STATS.map(({ label, value, change, icon: Icon, color }) => (
