@@ -82,3 +82,6 @@
 - [ ] Add free APIs section to Integrations page
 - [ ] Add automation tools section (n8n, Make, Zapier) to Integrations page
 - [x] Wire all "Learn More" and "Connect" buttons to real URLs
+
+## SEO Fixes
+- [x] Fix home page title: expanded to 45 chars using document.title

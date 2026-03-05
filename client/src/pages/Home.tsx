@@ -91,6 +91,10 @@ export default function Home() {
   const [tickerOffset, setTickerOffset] = useState(0);
 
   useEffect(() => {
+    document.title = "NEXUS — AI Social Marketplace & Creator Hub";
+  }, []);
+
+  useEffect(() => {
     const interval = setInterval(() => {
       setTickerOffset(prev => (prev + 1) % TICKER_ITEMS.length);
     }, 3000);
