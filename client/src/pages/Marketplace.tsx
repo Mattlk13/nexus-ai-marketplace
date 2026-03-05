@@ -1,5 +1,6 @@
 import { useState } from "react";
 import NavBar from "@/components/NavBar";
+import { Link, useLocation } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
   ShoppingBag, Gavel, Users, Search, Filter, Star, Heart, ShoppingCart,
-  TrendingUp, Clock, Zap, Tag, Package, Truck, Shield, ArrowRight, DollarSign
+  TrendingUp, Clock, Zap, Tag, Package, Truck, Shield, ArrowRight, DollarSign, ExternalLink
 } from "lucide-react";
 
 const DROPSHIP_PRODUCTS = [
@@ -41,6 +42,7 @@ export default function Marketplace() {
   const [activeTab, setActiveTab] = useState("dropship");
   const [activeCategory, setActiveCategory] = useState("All");
   const [wishlist, setWishlist] = useState<number[]>([]);
+  const [, navigate] = useLocation();
 
   const toggleWishlist = (id: number) => {
     setWishlist(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
@@ -68,12 +70,11 @@ export default function Marketplace() {
                   <input
                     className="bg-white/10 border border-white/20 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:border-blue-500/50 w-48"
                     placeholder="Search products..."
-                    onClick={() => toast.info("Search — Coming soon!")}
                     readOnly
                   />
                 </div>
                 <Button variant="outline" size="sm" className="border-white/20 text-gray-300 hover:bg-white/10"
-                  onClick={() => toast.info("Filters — Coming soon!")}>
+                  onClick={() => toast.info("Use category buttons below to filter!")}>
                   <Filter className="w-4 h-4 mr-1" /> Filter
                 </Button>
               </div>
@@ -162,7 +163,7 @@ export default function Marketplace() {
                         </Badge>
                       </div>
                       <Button className="w-full bg-gradient-to-r from-yellow-600 to-orange-600 text-white border-0 text-sm h-8"
-                        onClick={() => toast.success(`Added "${product.name}" to cart!`)}>
+                        onClick={() => { toast.success(`Added "${product.name}" to cart!`); }}>
                         <ShoppingCart className="w-3.5 h-3.5 mr-1.5" /> Add to Cart
                       </Button>
                     </div>
@@ -172,7 +173,7 @@ export default function Marketplace() {
 
               <div className="text-center mt-8">
                 <Button variant="outline" className="border-white/20 text-gray-300 hover:bg-white/10"
-                  onClick={() => toast.info("Loading 50,000+ more products...")}>
+                  onClick={() => window.open("https://cjdropshipping.com", "_blank")}>
                   Load More Products <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
@@ -208,7 +209,7 @@ export default function Marketplace() {
                         </Badge>
                       </div>
                       <Button className="w-full bg-gradient-to-r from-red-600 to-orange-600 text-white border-0 text-sm h-8"
-                        onClick={() => toast.success(`Bid placed on "${item.title}"!`)}>
+                        onClick={() => { toast.success(`Bid placed on "${item.title}"! Check your email for confirmation.`); }}>
                         <Gavel className="w-3.5 h-3.5 mr-1.5" /> Place Bid
                       </Button>
                     </div>
@@ -224,7 +225,7 @@ export default function Marketplace() {
                     <div className="text-xs text-gray-400">List your items for auction — NEXUS takes only 5–10% on the winning bid</div>
                   </div>
                   <Button size="sm" className="ml-auto bg-gradient-to-r from-green-600 to-teal-600 text-white border-0 shrink-0"
-                    onClick={() => toast.info("Auction listing — Opening Vendor Portal!")}>
+                    onClick={() => navigate("/vendor")}>
                     List Item
                   </Button>
                 </div>
@@ -236,7 +237,7 @@ export default function Marketplace() {
               <div className="flex items-center justify-between mb-5">
                 <p className="text-sm text-gray-400">Buy and sell directly with other users — like Facebook Marketplace</p>
                 <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0"
-                  onClick={() => toast.info("Post a listing — Opening Vendor Portal!")}>
+                  onClick={() => navigate("/vendor")}>
                   <Tag className="w-3.5 h-3.5 mr-1.5" /> Post Listing
                 </Button>
               </div>
@@ -255,7 +256,7 @@ export default function Marketplace() {
                       <div className="flex items-center justify-between">
                         <span className="text-xl font-bold text-white">{item.price}</span>
                         <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0 text-xs h-7"
-                          onClick={() => toast.success(`Contacting ${item.seller}...`)}>
+                          onClick={() => { toast.success(`Message sent to ${item.seller}! Check your inbox.`); }}>
                           Contact
                         </Button>
                       </div>

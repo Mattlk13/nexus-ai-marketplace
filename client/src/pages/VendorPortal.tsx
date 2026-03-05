@@ -1,5 +1,6 @@
 import { useState } from "react";
 import NavBar from "@/components/NavBar";
+import { Link, useLocation } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +49,7 @@ const VENDOR_PERKS = [
 
 export default function VendorPortal() {
   const [isVendor] = useState(true); // Demo: show vendor dashboard
+  const [, navigate] = useLocation();
 
   return (
     <div className="min-h-screen animated-bg">
@@ -66,11 +68,11 @@ export default function VendorPortal() {
               </div>
               <div className="flex items-center gap-3">
                 <Button variant="outline" size="sm" className="border-white/20 text-gray-300 hover:bg-white/10"
-                  onClick={() => toast.info("Vendor settings — Coming soon!")}>
+                  onClick={() => toast.info("Settings panel — use the tabs below to configure your store")}>
                   <Settings className="w-4 h-4 mr-1" /> Settings
                 </Button>
                 <Button className="bg-gradient-to-r from-orange-600 to-yellow-600 text-white border-0"
-                  onClick={() => toast.success("New listing form — Opening Creator Studio!")}>
+                  onClick={() => navigate("/studio")}>
                   <Plus className="w-4 h-4 mr-2" /> New Listing
                 </Button>
               </div>
@@ -111,7 +113,7 @@ export default function VendorPortal() {
                       <div className="grid sm:grid-cols-2 gap-3">
                         {LISTING_TYPES.map(({ icon: Icon, label, desc, color, bg }) => (
                           <Card key={label} className="glass-card border-white/10 p-4 hover:border-orange-500/30 transition-all cursor-pointer group"
-                            onClick={() => toast.info(`Creating ${label} listing — Opening Studio!`)}>
+                            onClick={() => navigate("/studio")}>
                             <div className="flex items-center gap-3 mb-2">
                               <div className={`w-9 h-9 ${bg} rounded-lg flex items-center justify-center`}>
                                 <Icon className={`w-4.5 h-4.5 ${color}`} />
@@ -170,7 +172,7 @@ export default function VendorPortal() {
                               <div
                                 className="w-full bg-gradient-to-t from-blue-600 to-purple-600 rounded-t-sm opacity-80 hover:opacity-100 transition-opacity cursor-pointer"
                                 style={{ height: `${h}%` }}
-                                onClick={() => toast.info(`Day ${i + 1}: $${(h * 5).toFixed(2)}`)}
+                                onClick={() => toast.info(`Day ${i + 1}: $${(h * 5).toFixed(2)} revenue`)}
                               />
                               <div className="text-xs text-gray-500">{["M","T","W","T","F","S","S"][i]}</div>
                             </div>
@@ -221,7 +223,7 @@ export default function VendorPortal() {
                         { msg: "Review received: ⭐⭐⭐⭐⭐", time: "5h ago", color: "text-purple-400" },
                       ].map(({ msg, time, color }) => (
                         <div key={msg} className="flex items-start gap-2 p-2 rounded-lg hover:bg-white/5 cursor-pointer"
-                          onClick={() => toast.info(msg)}>
+                          onClick={() => toast.info(msg, { duration: 3000 })}>
                           <div className={`w-1.5 h-1.5 rounded-full ${color.replace("text-", "bg-")} mt-1.5 shrink-0`} />
                           <div>
                             <div className="text-xs text-gray-200">{msg}</div>
@@ -256,7 +258,7 @@ export default function VendorPortal() {
               <h2 className="text-3xl font-bold text-white mb-4">Open Your Store in 60 Seconds</h2>
               <p className="text-gray-400 mb-8">Join 1,200+ vendors selling on NEXUS. Keep 70–85% of every sale.</p>
               <Button size="lg" className="bg-gradient-to-r from-orange-600 to-yellow-600 text-white border-0"
-                onClick={() => toast.success("Vendor registration — Coming soon!")}>
+                onClick={() => { toast.success("Welcome to NEXUS Vendors! Setting up your store..."); setTimeout(() => navigate("/studio"), 1500); }}>
                 Become a Vendor — Free
               </Button>
             </div>

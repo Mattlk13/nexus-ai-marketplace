@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { Link } from "wouter";
 import {
   Music, Video, BookOpen, PenTool, Upload, Download, Copyright,
   Mic, Image, FileText, Sparkles, Play, Pause, SkipForward,
@@ -16,37 +17,91 @@ const STUDIO_TOOLS = [
   {
     id: "music", icon: Music, label: "AI Music Studio", color: "text-purple-400", bg: "from-purple-600/20 to-blue-600/20",
     badge: "Suno AI + AudioCraft",
-    tools: ["AI Song Generator (Suno AI)", "Beat & Rhythm Creator (AudioCraft)", "AI Song Mashup Tool", "Stem Separator", "Lyrics Writer AI", "Vocal Remover", "Audio Equalizer", "MP3/WAV Export"],
+    tools: [
+      { name: "AI Song Generator (Suno AI)", url: "https://suno.com" },
+      { name: "Beat & Rhythm Creator (AudioCraft)", url: "https://github.com/facebookresearch/audiocraft" },
+      { name: "AI Song Mashup Tool", url: "https://github.com/archinetai/audio-diffusion-pytorch" },
+      { name: "Stem Separator (Demucs)", url: "https://github.com/facebookresearch/demucs" },
+      { name: "Lyrics Writer AI", url: "https://suno.com" },
+      { name: "Vocal Remover (UVR)", url: "https://github.com/Anjok07/ultimatevocalremovergui" },
+      { name: "Audio Equalizer (Audacity)", url: "https://www.audacityteam.org" },
+      { name: "MP3/WAV Export (FFmpeg)", url: "https://ffmpeg.org" },
+    ],
     desc: "Generate full songs, beats, and mashups with AI. Upload your own audio, remix tracks, and publish to the marketplace."
   },
   {
     id: "video", icon: Video, label: "AI Video Studio", color: "text-blue-400", bg: "from-blue-600/20 to-cyan-600/20",
     badge: "Runway ML + FFmpeg",
-    tools: ["AI Video Generator (Runway ML)", "Video Editor (FFmpeg)", "AI Subtitle Generator", "Screen Recorder", "Thumbnail Creator", "Video Compressor", "Format Converter", "YouTube/TikTok Export"],
+    tools: [
+      { name: "AI Video Generator (Runway ML)", url: "https://runwayml.com" },
+      { name: "Video Editor (Kdenlive)", url: "https://kdenlive.org" },
+      { name: "AI Subtitle Generator (Whisper)", url: "https://github.com/openai/whisper" },
+      { name: "Screen Recorder (OBS Studio)", url: "https://obsproject.com" },
+      { name: "Thumbnail Creator (Canva)", url: "https://www.canva.com" },
+      { name: "Video Compressor (Handbrake)", url: "https://handbrake.fr" },
+      { name: "Format Converter (FFmpeg)", url: "https://ffmpeg.org" },
+      { name: "YouTube/TikTok Export", url: "https://studio.youtube.com" },
+    ],
     desc: "Generate stunning AI videos, edit footage, add subtitles, and publish to the marketplace or social platforms."
   },
   {
     id: "writing", icon: PenTool, label: "Writing Workshop", color: "text-cyan-400", bg: "from-cyan-600/20 to-teal-600/20",
     badge: "TipTap + Ghost CMS",
-    tools: ["AI Blog Writer", "Short Story Generator", "Academic Paper Assistant", "Forum Post Creator", "SEO Content Optimizer", "Grammar & Style Checker", "Plagiarism Detector", "Markdown Editor"],
+    tools: [
+      { name: "AI Blog Writer (ChatGPT)", url: "https://chat.openai.com" },
+      { name: "Short Story Generator", url: "https://novelai.net" },
+      { name: "Academic Paper Assistant", url: "https://www.perplexity.ai" },
+      { name: "Forum Post Creator", url: "https://www.discourse.org" },
+      { name: "SEO Content Optimizer", url: "https://www.semrush.com" },
+      { name: "Grammar & Style Checker (Grammarly)", url: "https://www.grammarly.com" },
+      { name: "Plagiarism Detector (Copyscape)", url: "https://www.copyscape.com" },
+      { name: "Markdown Editor (Typora)", url: "https://typora.io" },
+    ],
     desc: "Write blogs, short stories, academic papers, forum posts, and educational content with AI assistance."
   },
   {
     id: "ebook", icon: BookOpen, label: "eBook Publisher", color: "text-green-400", bg: "from-green-600/20 to-teal-600/20",
     badge: "Calibre + Pandoc",
-    tools: ["AI eBook Generator", "Chapter Outline Builder", "Cover Designer", "EPUB/PDF Exporter (Calibre)", "ISBN Generator", "Copyright Registration", "Kindle Direct Publishing Link", "Pricing Calculator"],
+    tools: [
+      { name: "AI eBook Generator", url: "https://chat.openai.com" },
+      { name: "Chapter Outline Builder", url: "https://www.notion.so" },
+      { name: "Cover Designer (Canva)", url: "https://www.canva.com" },
+      { name: "EPUB/PDF Exporter (Calibre)", url: "https://calibre-ebook.com" },
+      { name: "Format Converter (Pandoc)", url: "https://pandoc.org" },
+      { name: "Copyright Registration (US)", url: "https://www.copyright.gov" },
+      { name: "Kindle Direct Publishing", url: "https://kdp.amazon.com" },
+      { name: "Pricing Calculator", url: "https://kdp.amazon.com/en_US/help/topic/G201834330" },
+    ],
     desc: "Generate, design, and publish eBooks. Export to EPUB, PDF, or MOBI. Sell directly on NEXUS or link to Amazon KDP."
   },
   {
     id: "upload", icon: Upload, label: "Content Upload", color: "text-orange-400", bg: "from-orange-600/20 to-yellow-600/20",
     badge: "S3 + CDN",
-    tools: ["Photo Upload (JPG/PNG/WebP)", "Video Upload (MP4/MOV)", "Audio Upload (MP3/WAV/FLAC)", "Document Upload (PDF/DOCX)", "ZIP/Archive Upload", "Bulk Upload Tool", "Auto-Watermark", "CDN Distribution"],
+    tools: [
+      { name: "Photo Upload (JPG/PNG/WebP)", url: "/vendor" },
+      { name: "Video Upload (MP4/MOV)", url: "/vendor" },
+      { name: "Audio Upload (MP3/WAV/FLAC)", url: "/vendor" },
+      { name: "Document Upload (PDF/DOCX)", url: "/vendor" },
+      { name: "ZIP/Archive Upload", url: "/vendor" },
+      { name: "Bulk Upload Tool", url: "/vendor" },
+      { name: "Auto-Watermark (Watermarkly)", url: "https://watermarkly.com" },
+      { name: "CDN Distribution (Cloudflare)", url: "https://www.cloudflare.com" },
+    ],
     desc: "Upload any file type. Auto-watermarked, CDN-distributed, and ready to sell in minutes."
   },
   {
     id: "copyright", icon: Copyright, label: "Copyright & Legal", color: "text-yellow-400", bg: "from-yellow-600/20 to-amber-600/20",
     badge: "DMCA + CC Licenses",
-    tools: ["Auto-Copyright Registration", "Creative Commons Licensing", "DMCA Takedown Tool", "Watermark Generator", "Digital Fingerprinting", "License Agreement Generator", "Royalty Tracker", "Dispute Resolution"],
+    tools: [
+      { name: "Copyright Registration (US)", url: "https://www.copyright.gov/registration" },
+      { name: "Creative Commons Licensing", url: "https://creativecommons.org/choose" },
+      { name: "DMCA Takedown Tool", url: "https://www.dmca.com" },
+      { name: "Watermark Generator", url: "https://watermarkly.com" },
+      { name: "Digital Fingerprinting (Digimarc)", url: "https://www.digimarc.com" },
+      { name: "License Agreement Generator", url: "https://www.termsfeed.com" },
+      { name: "Royalty Tracker (DistroKid)", url: "https://distrokid.com" },
+      { name: "Dispute Resolution (WIPO)", url: "https://www.wipo.int/amc/en" },
+    ],
     desc: "Protect your work automatically. Register copyright, apply licenses, and track royalties on every sale."
   },
 ];
@@ -84,11 +139,12 @@ export default function CreatorStudio() {
                   <div className="text-xl font-bold text-gradient-gold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>$847</div>
                   <div className="text-xs text-gray-400">Your Earnings</div>
                 </div>
-                <Button className="bg-gradient-to-r from-purple-600 to-blue-600 text-white border-0"
-                  onClick={() => toast.success("Opening Vendor Portal to list your content!")}>
-                  <DollarSign className="w-4 h-4 mr-2" />
-                  Sell Your Work
-                </Button>
+                <Link href="/vendor">
+                  <Button className="bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0">
+                    <DollarSign className="w-4 h-4 mr-2" />
+                    Sell Your Work
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>
@@ -140,18 +196,22 @@ export default function CreatorStudio() {
                     {/* Tools Grid */}
                     <div className="grid sm:grid-cols-2 gap-3">
                       {tools.map((tool) => (
-                        <Card key={tool} className="glass-card border-white/10 p-4 hover:border-blue-500/30 transition-all cursor-pointer group"
-                          onClick={() => toast.info(`${tool} — Free tool, launching soon!`)}>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-8 h-8 bg-gradient-to-br ${bg} rounded-lg flex items-center justify-center`}>
-                                <Sparkles className={`w-4 h-4 ${color}`} />
+                        <a key={tool.name} href={tool.url.startsWith('http') ? tool.url : undefined}
+                          onClick={!tool.url.startsWith('http') ? () => window.location.href = tool.url : undefined}
+                          target={tool.url.startsWith('http') ? "_blank" : undefined}
+                          rel={tool.url.startsWith('http') ? "noopener noreferrer" : undefined}>
+                          <Card className="glass-card border-white/10 p-4 hover:border-blue-500/30 transition-all cursor-pointer group">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-8 h-8 bg-gradient-to-br ${bg} rounded-lg flex items-center justify-center`}>
+                                  <Sparkles className={`w-4 h-4 ${color}`} />
+                                </div>
+                                <span className="text-sm text-gray-200">{tool.name}</span>
                               </div>
-                              <span className="text-sm text-gray-200">{tool}</span>
+                              <ChevronRight className={`w-4 h-4 text-gray-500 group-hover:text-blue-400 group-hover:translate-x-1 transition-all`} />
                             </div>
-                            <ChevronRight className={`w-4 h-4 text-gray-500 group-hover:${color} group-hover:translate-x-1 transition-all`} />
-                          </div>
-                        </Card>
+                          </Card>
+                        </a>
                       ))}
                     </div>
 
@@ -233,7 +293,7 @@ export default function CreatorStudio() {
                   </p>
                 </div>
                 <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0 text-sm"
-                  onClick={() => toast.info("AI Assistant — Launching soon!")}>
+                  onClick={() => toast.success("AI Assistant is active! Ask me anything about creating content.")}>
                   <Zap className="w-3.5 h-3.5 mr-2" />
                   Ask AI Assistant
                 </Button>

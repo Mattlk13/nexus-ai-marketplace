@@ -1,4 +1,5 @@
 import NavBar from "@/components/NavBar";
+import { Link, useLocation } from "wouter";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -57,6 +58,7 @@ const WEEKLY_BEST = [
 ];
 
 export default function Spotlight() {
+  const [, navigate] = useLocation();
   return (
     <div className="min-h-screen animated-bg">
       <NavBar />
@@ -87,7 +89,7 @@ export default function Spotlight() {
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             {SPOTLIGHT_CATEGORIES.map(({ icon: Icon, label, color, bg, badge }) => (
               <Card key={label} className={`glass-card border-white/10 p-4 text-center hover:border-yellow-500/30 transition-all cursor-pointer bg-gradient-to-br ${bg}`}
-                onClick={() => toast.info(`Browsing ${label} category`)}>
+                onClick={() => navigate("/marketplace")}>
                 <Icon className={`w-6 h-6 ${color} mx-auto mb-2`} />
                 <div className="text-sm font-semibold text-white">{label}</div>
               </Card>
@@ -101,7 +103,7 @@ export default function Spotlight() {
                 🌟 Featured Today
               </h2>
               <Button variant="outline" size="sm" className="border-white/20 text-gray-300 hover:bg-white/10"
-                onClick={() => toast.info("Viewing all featured content")}>
+                onClick={() => navigate("/marketplace")}>
                 View All <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
             </div>
@@ -130,17 +132,17 @@ export default function Spotlight() {
                     <div className="flex items-center gap-4 mb-4 text-sm text-gray-400">
                       <span className="flex items-center gap-1"><Heart className="w-4 h-4 text-pink-400" />{item.likes}</span>
                       <span className="flex items-center gap-1"><Eye className="w-4 h-4 text-blue-400" />{item.views}</span>
-                      <span className="flex items-center gap-1 cursor-pointer hover:text-white" onClick={() => toast.info("Share link copied!")}>
+                      <span className="flex items-center gap-1 cursor-pointer hover:text-white" onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success("Link copied to clipboard!"); }}>
                         <Share2 className="w-4 h-4 text-green-400" />Share
                       </span>
                     </div>
                     <div className="flex gap-2">
                       <Button className="flex-1 bg-gradient-to-r from-yellow-600 to-orange-600 text-white border-0 text-sm"
-                        onClick={() => toast.success(`Added "${item.title}" to cart!`)}>
+                        onClick={() => { toast.success(`Added "${item.title}" to cart!`); }}>
                         <ShoppingCart className="w-3.5 h-3.5 mr-1.5" /> Buy Now
                       </Button>
                       <Button variant="outline" size="icon" className="border-white/20 text-gray-300 hover:bg-white/10"
-                        onClick={() => toast.info(`Previewing "${item.title}"`)}>
+                        onClick={() => { toast.info(`Preview for "${item.title}" — full player coming soon!`); }}>
                         <Play className="w-4 h-4" />
                       </Button>
                     </div>
@@ -158,7 +160,7 @@ export default function Spotlight() {
             <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
               {RISING_CREATORS.map(({ name, type, growth, followers, img }) => (
                 <Card key={name} className="glass-card border-white/10 p-4 text-center hover:border-green-500/30 transition-all cursor-pointer"
-                  onClick={() => toast.info(`Viewing ${name}'s profile`)}>
+                  onClick={() => navigate("/vendor")}>
                   <img src={img} alt={name} className="w-16 h-16 rounded-full mx-auto mb-3 object-cover ring-2 ring-green-500/30" />
                   <div className="font-semibold text-white text-sm mb-1">{name}</div>
                   <div className="text-xs text-gray-400 mb-2">{type}</div>
@@ -167,7 +169,7 @@ export default function Spotlight() {
                     <Users className="w-3 h-3" />{followers}
                   </div>
                   <Button size="sm" className="w-full mt-3 bg-gradient-to-r from-green-600 to-teal-600 text-white border-0 text-xs h-7"
-                    onClick={(e) => { e.stopPropagation(); toast.success(`Following ${name}!`); }}>
+                    onClick={(e) => { e.stopPropagation(); toast.success(`Now following ${name}! 🎉`); }}>
                     Follow
                   </Button>
                 </Card>
@@ -185,7 +187,7 @@ export default function Spotlight() {
               <div className="space-y-3">
                 {WEEKLY_BEST.map(({ rank, name, type, revenue, badge }) => (
                   <div key={name} className="flex items-center justify-between p-3 rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
-                    onClick={() => toast.info(`Viewing ${name}'s store`)}>
+                    onClick={() => navigate("/vendor")}>
                     <div className="flex items-center gap-3">
                       <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${rank === 1 ? "bg-yellow-500 text-black" : rank === 2 ? "bg-gray-400 text-black" : rank === 3 ? "bg-amber-700 text-white" : "bg-white/10 text-gray-300"}`}>
                         {rank}
@@ -228,7 +230,7 @@ export default function Spotlight() {
                 </div>
               </div>
               <Button className="bg-gradient-to-r from-yellow-600 to-amber-600 text-white border-0"
-                onClick={() => toast.success("Opening Creator Studio — Start creating your spotlight content!")}>
+                onClick={() => navigate("/studio")}>
                 <Star className="w-4 h-4 mr-2" />
                 Start Creating Now
               </Button>

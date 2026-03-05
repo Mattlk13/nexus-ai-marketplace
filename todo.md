@@ -53,3 +53,32 @@
 - [ ] Shopify product sync via CJDropshipping API
 - [ ] Google AdSense integration
 - [ ] Social media auto-posting (Outfy/Buffer)
+
+## Bug Fixes — Broken Links & Navigation Audit
+- [x] Audit App.tsx for missing/incomplete routes
+- [x] Audit NavBar for broken href/Link targets
+- [x] Audit Home.tsx for dead buttons and links
+- [x] Audit Feed.tsx for dead buttons and links
+- [x] Audit CreatorStudio.tsx for dead buttons and links
+- [x] Audit Marketplace.tsx for dead buttons and links
+- [x] Audit VendorPortal.tsx for dead buttons and links
+- [x] Audit Spotlight.tsx for dead buttons and links
+- [x] Audit Integrations.tsx for dead buttons and links
+- [x] Fix all broken routes and missing pages
+- [x] Wire all CTA buttons to correct destinations
+- [x] Ensure all toast/feedback on non-implemented features
+
+## All Integrations + Full Link Fix
+- [x] Fix all footer links to use proper wouter Link routing
+- [x] Fix all CTA buttons across all pages to navigate correctly
+- [x] Rebuild Integrations page with 200+ real tools, all categories, working external links
+- [ ] Add integration tool cards to Creator Studio (Suno, Runway, AudioCraft, FFmpeg, etc.)
+- [ ] Add integration tool cards to Marketplace (CJDropshipping, DSers, Spocket, etc.)
+- [ ] Add integration tool cards to Vendor Portal (Stripe, PayPal, Printful, etc.)
+- [ ] Add integration tool cards to Feed (social platform links)
+- [ ] Add MCP server directory section to Integrations page
+- [ ] Add GitHub repos section to Integrations page
+- [ ] Add AI Agents section to Integrations page
+- [ ] Add free APIs section to Integrations page
+- [ ] Add automation tools section (n8n, Make, Zapier) to Integrations page
+- [x] Wire all "Learn More" and "Connect" buttons to real URLs

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -83,6 +83,7 @@ const AI_AGENTS = [
 ];
 
 export default function Home() {
+  const [, navigate] = useLocation();
   // The userAuth hooks provides authentication state
   // To implement login/logout functionality, simply call logout() or redirect to getLoginUrl()
   let { user, loading, error, isAuthenticated, logout } = useAuth();
@@ -148,7 +149,7 @@ export default function Home() {
               <Button
                 size="lg"
                 className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white border-0 text-base px-8 glow-blue"
-                onClick={() => toast.success("Welcome to NEXUS! Sign-up launching very soon.")}
+                onClick={() => navigate("/studio")}
               >
                 <Rocket className="w-5 h-5 mr-2" />
                 Start Creating Free
@@ -336,7 +337,7 @@ export default function Home() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {TRENDING_CONTENT.map((item) => (
               <Card key={item.title} className="glass-card border-white/10 overflow-hidden group hover:border-blue-500/30 transition-all cursor-pointer"
-                onClick={() => toast.info(`"${item.title}" — Available in Marketplace`)}>
+                onClick={() => navigate("/marketplace")}>
                 <div className={`h-32 bg-gradient-to-br ${item.color} flex items-center justify-center relative`}>
                   <Play className="w-10 h-10 text-white/80 group-hover:scale-110 transition-transform" />
                   <Badge className="absolute top-2 left-2 text-xs bg-black/40 text-white border-0">{item.type}</Badge>
@@ -556,7 +557,7 @@ export default function Home() {
             <Button
               size="lg"
               className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white border-0 text-lg px-10 py-6 glow-blue"
-              onClick={() => toast.success("You're on the waitlist! We'll notify you at launch.")}
+              onClick={() => { toast.success("You're on the waitlist! We'll notify you at launch. 🚀"); }}
             >
               <Rocket className="w-5 h-5 mr-2" />
               Join the Waitlist — Free
@@ -587,16 +588,35 @@ export default function Home() {
               </p>
             </div>
             {[
-              { title: "Platform", links: ["Social Feed", "Creator Studio", "Marketplace", "Vendor Portal", "Spotlight"] },
-              { title: "Create", links: ["AI Music", "AI Video", "Writing Workshop", "eBook Publisher", "Upload Content"] },
-              { title: "Earn", links: ["Dropshipping", "Sell Content", "Auctions", "Affiliate Program", "Ad Revenue"] },
+              { title: "Platform", links: [
+                { label: "Social Feed", href: "/feed" },
+                { label: "Creator Studio", href: "/studio" },
+                { label: "Marketplace", href: "/marketplace" },
+                { label: "Vendor Portal", href: "/vendor" },
+                { label: "Spotlight", href: "/spotlight" },
+              ]},
+              { title: "Create", links: [
+                { label: "AI Music", href: "/studio" },
+                { label: "AI Video", href: "/studio" },
+                { label: "Writing Workshop", href: "/studio" },
+                { label: "eBook Publisher", href: "/studio" },
+                { label: "Upload Content", href: "/vendor" },
+              ]},
+              { title: "Earn", links: [
+                { label: "Dropshipping", href: "/marketplace" },
+                { label: "Sell Content", href: "/vendor" },
+                { label: "Auctions", href: "/marketplace" },
+                { label: "Integrations", href: "/integrations" },
+                { label: "Ad Revenue", href: "/integrations" },
+              ]},
             ].map(({ title, links }) => (
               <div key={title}>
                 <div className="font-semibold text-white text-sm mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{title}</div>
                 <div className="space-y-2">
-                  {links.map(link => (
-                    <div key={link} className="text-xs text-gray-400 hover:text-white cursor-pointer transition-colors"
-                      onClick={() => toast.info(`${link} — Coming soon!`)}>{link}</div>
+                  {links.map(({ label, href }) => (
+                    <Link key={label} href={href}>
+                      <div className="text-xs text-gray-400 hover:text-white cursor-pointer transition-colors">{label}</div>
+                    </Link>
                   ))}
                 </div>
               </div>
