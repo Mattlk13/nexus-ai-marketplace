@@ -106,7 +106,7 @@
 - [ ] Add automation tools section (n8n, Make, Zapier) to Integrations page
 
 ## Missing Platform Features (from conversation)
-- [ ] S3 file upload for creator content (music, video, ebook, images)
+- [x] S3 file upload for creator content (music, video, ebook, images)
 - [ ] Real-time chat with Socket.io (user-to-user messaging like Facebook)
 - [ ] Push notifications for bids, sales, and new follower- [x] Add Google AdSense ad units on Feed and Spotlight pages (passive income) [ ] Social media auto-posting integration (Outfy/Buffer) on Vendor Portal
 - [ ] Shopify product sync via CJDropshipping API (auto-import 50 products/day)
@@ -142,3 +142,17 @@
 - [x] Replace AdSense placeholder banners with real ad units on Feed and Spotlight
 - [x] Add Google Search Console verification meta tag to index.html
 - [ ] Add structured data (JSON-LD) schema markup to Home page
+
+## S3 File Uploads — Creator Studio
+- [x] Add uploaded_files table to drizzle schema
+- [x] Add presigned upload URL tRPC procedure (server-side S3)
+- [x] Add file metadata save procedure (post-upload)
+- [x] Add file list/delete procedures for vendor dashboard
+- [x] Build drag-and-drop upload UI in Creator Studio
+- [x] Add file type validation (audio, video, pdf, epub, image)
+- [x] Add upload progress bar
+- [x] Add file preview (audio player, video player, image preview, PDF link)
+- [x] Wire uploaded files to Marketplace listings
+- [x] Wire uploaded files to Vendor Portal dashboard
+- [x] Add "Publish to Marketplace" button on uploaded files
+- [x] Write S3 upload vitest tests

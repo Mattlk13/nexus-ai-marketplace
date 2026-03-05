@@ -241,3 +241,28 @@ export const stripeProducts = mysqlTable("stripe_products", {
 
 export type StripeProduct = typeof stripeProducts.$inferSelect;
 export type InsertStripeProduct = typeof stripeProducts.$inferInsert;
+
+// ─── Uploaded Files (S3 creator content) ─────────────────────────────────────
+export const uploadedFiles = mysqlTable("uploaded_files", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  fileName: varchar("fileName", { length: 255 }).notNull(),
+  originalName: varchar("originalName", { length: 255 }).notNull(),
+  fileKey: varchar("fileKey", { length: 512 }).notNull().unique(),
+  fileUrl: text("fileUrl").notNull(),
+  mimeType: varchar("mimeType", { length: 128 }).notNull(),
+  fileSize: bigint("fileSize", { mode: "number" }).notNull(),
+  fileCategory: mysqlEnum("fileCategory", ["music", "video", "ebook", "image", "document", "other"]).notNull(),
+  title: varchar("title", { length: 255 }),
+  description: text("description"),
+  isPublished: boolean("isPublished").default(false),
+  price: decimal("price", { precision: 10, scale: 2 }).default("0.00"),
+  isFree: boolean("isFree").default(true),
+  downloadCount: int("downloadCount").default(0),
+  linkedContentId: int("linkedContentId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UploadedFile = typeof uploadedFiles.$inferSelect;
+export type InsertUploadedFile = typeof uploadedFiles.$inferInsert;

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import NavBar from "@/components/NavBar";
 import { Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -11,8 +11,43 @@ import { toast } from "sonner";
 import {
   Store, Package, DollarSign, TrendingUp, BarChart3, Upload, Tag,
   Star, Users, ShoppingBag, Music, Video, BookOpen, Image, FileText,
-  Settings, Bell, ChevronRight, Plus, Eye, Heart, Zap, Shield, CheckCircle
+  Settings, Bell, ChevronRight, Plus, Eye, Zap, Shield, CheckCircle,
+  Globe, Lock, Trash2, Loader2
 } from "lucide-react";
+
+// ─── Uploaded File Types ──────────────────────────────────────────────────────
+interface UploadedFile {
+  id: number;
+  fileName: string;
+  originalName: string;
+  fileUrl: string;
+  mimeType: string;
+  fileSize: number;
+  fileCategory: "music" | "video" | "ebook" | "image" | "document" | "other";
+  title: string | null;
+  description: string | null;
+  isPublished: boolean;
+  price: string;
+  isFree: boolean;
+  downloadCount: number;
+  createdAt: string;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function FileCategoryIcon({ cat }: { cat: string }) {
+  switch (cat) {
+    case "music": return <Music className="w-4 h-4 text-purple-400" />;
+    case "video": return <Video className="w-4 h-4 text-blue-400" />;
+    case "ebook": return <BookOpen className="w-4 h-4 text-green-400" />;
+    case "image": return <Image className="w-4 h-4 text-pink-400" />;
+    default: return <FileText className="w-4 h-4 text-yellow-400" />;
+  }
+}
 
 const VENDOR_STATS = [
   { label: "Total Revenue", value: "$4,847.50", change: "+24%", icon: DollarSign, color: "text-green-400" },
@@ -54,6 +89,42 @@ export default function VendorPortal() {
   const [isVendor] = useState(true); // Demo: show vendor dashboard
   const [, navigate] = useLocation();
   const { isAuthenticated } = useAuth();
+  const [myFiles, setMyFiles] = useState<UploadedFile[]>([]);
+  const [loadingFiles, setLoadingFiles] = useState(false);
+
+  const fetchMyFiles = useCallback(async () => {
+    setLoadingFiles(true);
+    try {
+      const res = await fetch("/api/upload/my-files", { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        setMyFiles(data.files as UploadedFile[]);
+      }
+    } catch { /* not logged in */ } finally {
+      setLoadingFiles(false);
+    }
+  }, []);
+
+  useEffect(() => { if (isAuthenticated) fetchMyFiles(); }, [isAuthenticated, fetchMyFiles]);
+
+  const handleTogglePublish = async (fileId: number) => {
+    try {
+      const res = await fetch(`/api/upload/${fileId}/publish`, { method: "PATCH", credentials: "include" });
+      if (!res.ok) throw new Error("Failed");
+      await fetchMyFiles();
+      toast.success("Visibility updated!");
+    } catch { toast.error("Failed to update visibility"); }
+  };
+
+  const handleDeleteFile = async (fileId: number, name: string) => {
+    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    try {
+      const res = await fetch(`/api/upload/${fileId}`, { method: "DELETE", credentials: "include" });
+      if (!res.ok) throw new Error("Failed");
+      setMyFiles(f => f.filter(x => x.id !== fileId));
+      toast.success("File deleted");
+    } catch { toast.error("Failed to delete file"); }
+  };
   const [stripeLoading, setStripeLoading] = useState(false);
 
   const { data: connectStatus } = trpc.stripe.connectStatus.useQuery(undefined, {
@@ -179,6 +250,10 @@ export default function VendorPortal() {
                   <Tabs defaultValue="listings">
                     <TabsList className="glass-card border border-white/10 h-auto p-1 bg-transparent">
                       <TabsTrigger value="listings" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400 text-sm">My Listings</TabsTrigger>
+                      <TabsTrigger value="files" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400 text-sm">
+                        <Upload className="w-3.5 h-3.5 mr-1" />My Files
+                        {myFiles.length > 0 && <Badge className="ml-1 text-xs bg-orange-500/20 text-orange-300 border-0 px-1.5">{myFiles.length}</Badge>}
+                      </TabsTrigger>
                       <TabsTrigger value="sales" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400 text-sm">Recent Sales</TabsTrigger>
                       <TabsTrigger value="analytics" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-gray-400 text-sm">Analytics</TabsTrigger>
                     </TabsList>
@@ -203,6 +278,84 @@ export default function VendorPortal() {
                           </Card>
                         ))}
                       </div>
+                    </TabsContent>
+
+                    <TabsContent value="files" className="mt-4">
+                      <Card className="glass-card border-white/10 p-5">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            <Upload className="w-4 h-4 text-orange-400" />
+                            <span className="font-semibold text-white text-sm">Uploaded Files</span>
+                            <Badge className="text-xs bg-white/10 text-gray-300 border-0">{myFiles.length}</Badge>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white text-xs" onClick={fetchMyFiles}>
+                              {loadingFiles ? <Loader2 className="w-3 h-3 animate-spin" /> : "Refresh"}
+                            </Button>
+                            <Button size="sm" className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white border-0 text-xs" onClick={() => navigate("/studio")}>
+                              <Plus className="w-3 h-3 mr-1" /> Upload New
+                            </Button>
+                          </div>
+                        </div>
+
+                        {loadingFiles ? (
+                          <div className="flex items-center justify-center py-10">
+                            <Loader2 className="w-6 h-6 text-orange-400 animate-spin" />
+                          </div>
+                        ) : myFiles.length === 0 ? (
+                          <div className="text-center py-10">
+                            <Upload className="w-10 h-10 mx-auto mb-3 text-gray-600" />
+                            <div className="text-gray-400 text-sm mb-3">No files uploaded yet.</div>
+                            <Button size="sm" className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white border-0" onClick={() => navigate("/studio")}>
+                              Go to Creator Studio
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {myFiles.map(file => (
+                              <div key={file.id} className="flex items-center gap-3 bg-white/5 rounded-xl p-3 hover:bg-white/8 transition-all">
+                                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-orange-600/30 to-yellow-600/30 flex items-center justify-center shrink-0">
+                                  <FileCategoryIcon cat={file.fileCategory} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium text-white truncate">{file.title || file.originalName}</div>
+                                  <div className="text-xs text-gray-400 flex items-center gap-2 mt-0.5">
+                                    <span>{formatBytes(file.fileSize)}</span>
+                                    <span>·</span>
+                                    <span className="capitalize">{file.fileCategory}</span>
+                                    <span>·</span>
+                                    <span>{file.isFree ? "Free" : `$${parseFloat(file.price).toFixed(2)}`}</span>
+                                    <span>·</span>
+                                    <span>{file.downloadCount} downloads</span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <a href={file.fileUrl} target="_blank" rel="noopener noreferrer">
+                                    <Button variant="ghost" size="icon" className="w-7 h-7 text-gray-400 hover:text-blue-400">
+                                      <Eye className="w-3.5 h-3.5" />
+                                    </Button>
+                                  </a>
+                                  <Button
+                                    variant="ghost" size="icon"
+                                    className={`w-7 h-7 ${file.isPublished ? "text-green-400 hover:text-yellow-400" : "text-gray-500 hover:text-green-400"}`}
+                                    title={file.isPublished ? "Published — click to unpublish" : "Draft — click to publish"}
+                                    onClick={() => handleTogglePublish(file.id)}
+                                  >
+                                    {file.isPublished ? <Globe className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
+                                  </Button>
+                                  <Button
+                                    variant="ghost" size="icon"
+                                    className="w-7 h-7 text-gray-500 hover:text-red-400"
+                                    onClick={() => handleDeleteFile(file.id, file.title || file.originalName)}
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </Card>
                     </TabsContent>
 
                     <TabsContent value="sales" className="mt-4">

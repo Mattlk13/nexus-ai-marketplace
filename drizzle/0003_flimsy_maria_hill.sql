@@ -1,0 +1,22 @@
+CREATE TABLE `uploaded_files` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`userId` int NOT NULL,
+	`fileName` varchar(255) NOT NULL,
+	`originalName` varchar(255) NOT NULL,
+	`fileKey` varchar(512) NOT NULL,
+	`fileUrl` text NOT NULL,
+	`mimeType` varchar(128) NOT NULL,
+	`fileSize` bigint NOT NULL,
+	`fileCategory` enum('music','video','ebook','image','document','other') NOT NULL,
+	`title` varchar(255),
+	`description` text,
+	`isPublished` boolean DEFAULT false,
+	`price` decimal(10,2) DEFAULT '0.00',
+	`isFree` boolean DEFAULT true,
+	`downloadCount` int DEFAULT 0,
+	`linkedContentId` int,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `uploaded_files_id` PRIMARY KEY(`id`),
+	CONSTRAINT `uploaded_files_fileKey_unique` UNIQUE(`fileKey`)
+);
