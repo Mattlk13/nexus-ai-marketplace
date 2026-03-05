@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+# Husky commit-msg hook — validates conventional commit format
+pnpm exec commitlint --edit "$1"

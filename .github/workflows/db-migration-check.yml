@@ -1,0 +1,137 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# NEXUS — Database Migration Safety Check
+# Validates that Drizzle schema changes are backwards-compatible
+# Runs on PRs that modify drizzle/schema.ts or drizzle/migrations/
+# ─────────────────────────────────────────────────────────────────────────────
+name: DB Migration Check
+
+on:
+  pull_request:
+    paths:
+      - "drizzle/schema.ts"
+      - "drizzle/migrations/**"
+      - "drizzle.config.ts"
+
+env:
+  NODE_VERSION: "22"
+  PNPM_VERSION: "9"
+
+jobs:
+  migration-safety:
+    name: Migration Safety Validation
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: testpassword
+          MYSQL_DATABASE: nexus_migration_test
+          MYSQL_USER: nexus
+          MYSQL_PASSWORD: nexuspass
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -ptestpassword"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      DATABASE_URL: mysql://nexus:nexuspass@127.0.0.1:3306/nexus_migration_test
+      JWT_SECRET: ci-migration-test-secret
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -u nexus -pnexuspass --silent 2>/dev/null; then
+              echo "MySQL ready"; break
+            fi
+            echo "Waiting... ($i/30)"; sleep 2
+          done
+
+      # Apply migrations to a fresh test database
+      - name: Apply migrations to clean database
+        run: pnpm db:push
+        id: migration
+        continue-on-error: true
+
+      - name: Report migration failure
+        if: steps.migration.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: [
+                '## ❌ Database Migration Failed',
+                '',
+                'The Drizzle schema changes in this PR could not be applied to a clean MySQL 8 database.',
+                '',
+                '**Action required:**',
+                '1. Run `pnpm db:push` locally against a clean database',
+                '2. Fix any migration errors',
+                '3. Ensure `drizzle/migrations/` contains the correct generated SQL',
+                '',
+                'See the [DB Migration Check workflow](' + context.serverUrl + '/' + context.repo.owner + '/' + context.repo.repo + '/actions/runs/' + context.runId + ') for details.'
+              ].join('\n')
+            });
+            core.setFailed('Database migration failed');
+
+      - name: Verify migration succeeded
+        if: steps.migration.outcome == 'success'
+        run: |
+          echo "✅ All migrations applied successfully to a clean MySQL 8 database"
+
+      # Check for destructive operations (DROP TABLE, DROP COLUMN)
+      - name: Scan for destructive SQL operations
+        run: |
+          echo "Scanning migration files for destructive operations..."
+          DESTRUCTIVE=$(grep -rn "DROP TABLE\|DROP COLUMN\|TRUNCATE\|ALTER TABLE.*DROP" drizzle/migrations/ 2>/dev/null || true)
+          if [ -n "$DESTRUCTIVE" ]; then
+            echo "⚠️ WARNING: Destructive SQL operations detected:"
+            echo "$DESTRUCTIVE"
+            echo "destructive_ops=true" >> $GITHUB_ENV
+          else
+            echo "✅ No destructive operations found"
+            echo "destructive_ops=false" >> $GITHUB_ENV
+          fi
+
+      - name: Warn about destructive operations
+        if: env.destructive_ops == 'true' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: [
+                '## ⚠️ Destructive Database Operation Detected',
+                '',
+                'This PR contains one or more **destructive SQL operations** (DROP TABLE, DROP COLUMN, TRUNCATE).',
+                '',
+                '**Before merging, confirm:**',
+                '- [ ] Data has been backed up or is not needed',
+                '- [ ] A rollback plan exists',
+                '- [ ] The operation has been tested on a staging database',
+                '- [ ] All application code referencing the dropped column/table has been updated'
+              ].join('\n')
+            });
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              labels: ['breaking-change', 'needs-review']
+            }).catch(() => {});

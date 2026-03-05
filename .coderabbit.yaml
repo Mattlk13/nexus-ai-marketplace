@@ -1,0 +1,66 @@
+# CodeRabbit AI Code Review Configuration
+# https://docs.coderabbit.ai/getting-started/configure-coderabbit
+# Drop this file at the repo root to customize CodeRabbit's behavior
+
+version: "2"
+
+language: "en-US"
+
+tone_instructions: |
+  Be direct and concise. Focus on security, correctness, and performance.
+  Flag any tRPC procedure that throws a generic Error instead of TRPCError.
+  Flag any raw SQL string interpolation without parameterization.
+  Flag any file upload route that buffers files in memory without streaming.
+
+reviews:
+  # Review every PR automatically
+  request_changes_workflow: true
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+
+  # Abort review if PR is a draft
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - main
+      - develop
+
+  # Path-specific review instructions
+  path_instructions:
+    - path: "server/routers.ts"
+      instructions: |
+        - Every error throw MUST use TRPCError with a specific code (NOT_FOUND, BAD_REQUEST, INTERNAL_SERVER_ERROR, FORBIDDEN, UNAUTHORIZED)
+        - Every LIKE query MUST escape wildcards (%, _, \) before interpolation
+        - Every LLM response MUST be parsed with a try/catch guard
+        - Check that protectedProcedure is used for any mutation that writes user data
+    - path: "drizzle/schema.ts"
+      instructions: |
+        - Every new table MUST have at least one index on its most-queried column
+        - Foreign key columns (userId, vendorId, etc.) MUST have an index
+        - Decimal columns for money MUST use precision >= 10, scale >= 2
+        - New enum values should be reviewed for extensibility
+    - path: "server/upload.ts"
+      instructions: |
+        - File size limits MUST be enforced per category
+        - MIME type validation MUST be performed server-side
+        - File keys MUST include a random suffix to prevent enumeration
+        - Authentication MUST be verified before any file operation
+    - path: "client/src/**"
+      instructions: |
+        - No raw fetch() calls — use tRPC hooks or a shared apiClient
+        - All interactive elements MUST have aria-label or visible text
+        - Loading and error states MUST be handled for every tRPC query
+        - No hardcoded URLs — use environment variables or constants
+
+  # Ignore these paths in reviews
+  path_filters:
+    - "!drizzle/migrations/**"
+    - "!pnpm-lock.yaml"
+    - "!*.min.js"
+    - "!dist/**"
+
+chat:
+  auto_reply: true

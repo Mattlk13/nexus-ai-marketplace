@@ -1,0 +1,52 @@
+# GitHub Actions Labeler configuration
+# Automatically labels PRs based on changed file paths
+
+frontend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "client/**"
+
+backend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "server/**"
+          - "shared/**"
+
+database:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "drizzle/**"
+          - "drizzle.config.ts"
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/**"
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "package.json"
+          - "pnpm-lock.yaml"
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "**/*.test.ts"
+          - "**/*.spec.ts"
+          - "vitest.config.ts"
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "*.md"
+          - "docs/**"
+
+configuration:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "*.config.ts"
+          - "*.config.js"
+          - "tsconfig*.json"
+          - ".env*"
+          - "vite.config.ts"

@@ -1,0 +1,3 @@
+#!/usr/bin/env sh
+# Husky pre-commit hook — runs lint-staged on staged files only (fast)
+pnpm exec lint-staged
