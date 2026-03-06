@@ -1,6 +1,7 @@
 # NEXUS AI Social Marketplace — TODO
 
 ## Core Platform
+
 - [x] Full-stack upgrade (tRPC + MySQL + Auth)
 - [x] Database schema: 9 tables (users, content_items, vendor_stores, products, auctions, feed_posts, orders, agent_logs, seo_pages)
 - [x] Database migration applied successfully
@@ -8,6 +9,7 @@
 - [x] Animated background and glassmorphism UI
 
 ## Pages Built
+
 - [x] Home landing page (hero, features, stats, trending, revenue streams, AI agents, CTA)
 - [x] Social Feed page (newsfeed, trending, stories, post creation)
 - [x] Creator Studio page (music, video, writing, eBook, upload tools)
@@ -18,6 +20,7 @@
 - [x] NavBar component (responsive, all routes)
 
 ## Backend API (tRPC)
+
 - [x] Auth router (me, logout)
 - [x] Feed router (list, trending, create post)
 - [x] Content router (list, spotlight, create, generateWithAI)
@@ -26,6 +29,7 @@
 - [x] Agent router (logs, stats, runSEO)
 
 ## AI Automation
+
 - [x] AI content generation via LLM (writing, ebook, blog)
 - [x] SEO agent: generates and publishes blog posts via AI
 - [x] Owner notifications on key events (new vendor, new content, SEO post)
@@ -35,16 +39,19 @@
 - [x] Dynamic pricing engine (Python)
 
 ## Testing
+
 - [x] 26/26 vitest tests passing (auth + all marketplace routers)
 - [x] TypeScript: 0 errors
 
 ## Deployment
+
 - [x] GitHub repository: github.com/Mattlk13/ai-social-marketplace
 - [x] Google Drive: all assets uploaded with shareable links
 - [x] Gmail deployment notification sent
 - [x] Google Calendar: 5 recurring AI agent events (CST)
 
 ## Planned Next Steps
+
 - [ ] Stripe Connect integration for vendor payouts
 - [ ] File upload to S3 for creator content
 - [ ] Real-time chat (Socket.io)
@@ -55,6 +62,7 @@
 - [ ] Social media auto-posting (Outfy/Buffer)
 
 ## Bug Fixes — Broken Links & Navigation Audit
+
 - [x] Audit App.tsx for missing/incomplete routes
 - [x] Audit NavBar for broken href/Link targets
 - [x] Audit Home.tsx for dead buttons and links
@@ -69,6 +77,7 @@
 - [x] Ensure all toast/feedback on non-implemented features
 
 ## All Integrations + Full Link Fix
+
 - [x] Fix all footer links to use proper wouter Link routing
 - [x] Fix all CTA buttons across all pages to navigate correctly
 - [x] Rebuild Integrations page with 200+ real tools, all categories, working external links
@@ -84,9 +93,11 @@
 - [x] Wire all "Learn More" and "Connect" buttons to real URLs
 
 ## SEO Fixes
+
 - [x] Fix home page title: expanded to 45 chars using document.title
 
 ## SEO — Additional Fixes (from conversation)
+
 - [x] Add meta description tag (150-160 chars) to index.html
 - [x] Add Open Graph tags (og:title, og:description, og:image) to index.html
 - [x] Add Twitter Card meta tags to index.html
@@ -95,6 +106,7 @@
 - [x] Add sitemap.xml to client/public
 
 ## Missing Integration Tool Cards (from conversation)
+
 - [x] Add integration tool cards to Creator Studio (Suno, Runway, Udio, AudioCraft, FFmpeg, Kdenlive, Canva, etc.)
 - [x] Add integration tool cards to Marketplace (CJDropshipping, DSers, Spocket, Printful, EPROLO, etc.)
 - [x] Add integration tool cards to Vendor Portal (Stripe, PayPal, Printful, ShipStation, etc.)
@@ -106,6 +118,7 @@
 - [ ] Add automation tools section (n8n, Make, Zapier) to Integrations page
 
 ## Missing Platform Features (from conversation)
+
 - [x] S3 file upload for creator content (music, video, ebook, images)
 - [ ] Real-time chat with Socket.io (user-to-user messaging like Facebook)
 - [ ] Push notifications for bids, sales, and new follower- [x] Add Google AdSense ad units on Feed and Spotlight pages (passive income) [ ] Social media auto-posting integration (Outfy/Buffer) on Vendor Portal
@@ -123,12 +136,14 @@
 - [ ] Mobile app scaffold (React Native / Expo)
 
 ## Stripe Integration (from conversation)
+
 - [x] Add Stripe Connect for vendor payouts
 - [x] Add Stripe Checkout for content purchases
 - [ ] Add Stripe subscription billing for premium vendor tier
 - [x] Revenue split automation (platform % + vendor %)
 
 ## Stripe Connect Integration
+
 - [x] Run webdev_add_feature stripe upgrade
 - [x] Build Stripe Connect onboarding flow for vendors
 - [x] Build Stripe Checkout for content and product purchases
@@ -138,12 +153,14 @@
 - [x] Write Stripe vitest tests (11 tests passing)
 
 ## Google AdSense & Search Console
+
 - [x] Add Google AdSense auto-ads script to index.html
 - [x] Replace AdSense placeholder banners with real ad units on Feed and Spotlight
 - [x] Add Google Search Console verification meta tag to index.html
 - [ ] Add structured data (JSON-LD) schema markup to Home page
 
 ## S3 File Uploads — Creator Studio
+
 - [x] Add uploaded_files table to drizzle schema
 - [x] Add presigned upload URL tRPC procedure (server-side S3)
 - [x] Add file metadata save procedure (post-upload)
@@ -156,3 +173,35 @@
 - [x] Wire uploaded files to Vendor Portal dashboard
 - [x] Add "Publish to Marketplace" button on uploaded files
 - [x] Write S3 upload vitest tests
+
+## Security & Performance Hardening
+
+- [x] Install express-rate-limit and apply 120 req/min to /api/trpc
+- [x] Apply 20 req/min limit to /api/upload
+- [x] Add FK constraints on all userId columns (onDelete: restrict)
+- [x] Run pnpm db:push after FK migration
+
+## tRPC Procedure Tests
+
+- [x] Create server/routers.test.ts with placeBid financial logic tests
+- [x] Add createStore role escalation tests
+- [x] Add generateWithAI LLM error path tests
+
+## Memory & Upload Optimization
+
+- [x] Switch large file uploads to disk storage + streaming (multer diskStorage + ReadStream to S3)
+- [x] Add temp file cleanup on success and error paths
+- [x] Add filename sanitization with sanitize-filename library
+
+## Full Deep Audit Fixes
+
+- [x] Full 7-domain AI agent audit (13 Critical, 29 High, 26 Medium, 14 Low issues identified)
+- [x] Fix command injection in devtools.ts (spawn vs exec)
+- [x] Fix prompt injection in generateWithAI and runSEO (sanitization + system guard)
+- [x] Fix placeBid race condition (atomic conditional SQL UPDATE)
+- [x] Fix cascade deletes → restrict on all user-owned tables
+- [x] Fix memory exhaustion in file uploads (disk storage + streaming)
+- [ ] Add Stripe webhook idempotency (store processed event IDs)
+- [ ] Move order creation to checkout.session.completed webhook
+- [ ] Add missing FK: products.vendorId, auctions.productId/winnerId, orders.sellerId
+- [ ] Add per-user LLM rate limiting (10 calls/hour)

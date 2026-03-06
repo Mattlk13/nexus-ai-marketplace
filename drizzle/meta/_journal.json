@@ -36,6 +36,20 @@
       "when": 1772741031302,
       "tag": "0004_cute_wraith",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1772768089967,
+      "tag": "0005_purple_morlun",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1772773756665,
+      "tag": "0006_nostalgic_colossus",
+      "breakpoints": true
     }
   ]
 }

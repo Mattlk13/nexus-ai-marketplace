@@ -1,0 +1,54 @@
+name: Unity Cloud Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_target:
+        description: "Unity build target ID (e.g. webgl-release)"
+        required: true
+        default: "webgl-release"
+      clean_build:
+        description: "Force clean build"
+        type: boolean
+        default: false
+
+jobs:
+  trigger-unity-build:
+    name: Trigger Unity Cloud Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger build via Unity Cloud Build API
+        id: trigger
+        run: |
+          RESPONSE=$(curl -s -X POST \
+            "https://build-api.cloud.unity3d.com/api/v1/orgs/${{ secrets.UNITY_ORG_ID }}/projects/${{ secrets.UNITY_PROJECT_ID }}/buildtargets/${{ github.event.inputs.build_target }}/builds" \
+            -H "Authorization: Basic $(echo -n '${{ secrets.UNITY_API_KEY }}' | base64)" \
+            -H "Content-Type: application/json" \
+            -d '{"clean": ${{ github.event.inputs.clean_build }}, "delay": 0}')
+          echo "Response: $RESPONSE"
+          BUILD_NUM=$(echo "$RESPONSE" | jq -r '.[0].build // empty')
+          echo "build_number=$BUILD_NUM" >> $GITHUB_OUTPUT
+
+      - name: Poll build status
+        if: steps.trigger.outputs.build_number != ''
+        run: |
+          BUILD_NUM="${{ steps.trigger.outputs.build_number }}"
+          TARGET="${{ github.event.inputs.build_target }}"
+          for i in $(seq 1 60); do
+            STATUS=$(curl -s \
+              "https://build-api.cloud.unity3d.com/api/v1/orgs/${{ secrets.UNITY_ORG_ID }}/projects/${{ secrets.UNITY_PROJECT_ID }}/buildtargets/${TARGET}/builds/${BUILD_NUM}" \
+              -H "Authorization: Basic $(echo -n '${{ secrets.UNITY_API_KEY }}' | base64)" | \
+              jq -r '.buildStatus')
+            echo "[$i/60] Build status: $STATUS"
+            if [[ "$STATUS" == "success" ]]; then
+              echo "✅ Unity build succeeded!"
+              exit 0
+            elif [[ "$STATUS" == "failure" || "$STATUS" == "canceled" ]]; then
+              echo "❌ Unity build failed with status: $STATUS"
+              exit 1
+            fi
+            sleep 30
+          done
+          echo "⏰ Build timed out after 30 minutes"
+          exit 1
