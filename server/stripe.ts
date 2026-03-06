@@ -1,8 +1,15 @@
 import Stripe from "stripe";
 import { eq } from "drizzle-orm";
 import { getDb } from "./db";
-import { users, orders, stripeAccounts, stripeProducts, contentItems, products } from "../drizzle/schema";
-import { ENV } from "./_core/env";
+import {
+  users,
+  orders,
+  stripeAccounts,
+  stripeProducts,
+  contentItems,
+  products,
+  stripeEvents,
+} from "../drizzle/schema";
 import { notifyOwner } from "./_core/notification";
 
 // ─── Stripe client ────────────────────────────────────────────────────────────
@@ -13,13 +20,58 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 // ─── Platform commission rate (15%) ──────────────────────────────────────────
 const PLATFORM_FEE_PERCENT = 0.15;
 
+// ─── Idempotency helpers ──────────────────────────────────────────────────────
+/**
+ * Check if a Stripe event has already been processed.
+ * Returns true if the event ID exists in stripe_events table.
+ * This prevents duplicate order creation when Stripe retries webhook delivery.
+ */
+async function isEventProcessed(
+  db: Awaited<ReturnType<typeof getDb>>,
+  eventId: string
+): Promise<boolean> {
+  if (!db) return false;
+  const existing = await db
+    .select({ id: stripeEvents.id })
+    .from(stripeEvents)
+    .where(eq(stripeEvents.eventId, eventId))
+    .limit(1);
+  return existing.length > 0;
+}
+
+/**
+ * Record a Stripe event as processed. Uses INSERT IGNORE semantics via
+ * onDuplicateKeyUpdate to handle concurrent webhook deliveries safely.
+ */
+async function recordEvent(
+  db: Awaited<ReturnType<typeof getDb>>,
+  eventId: string,
+  eventType: string,
+  status: "processed" | "failed" | "skipped" = "processed",
+  errorMessage?: string
+): Promise<void> {
+  if (!db) return;
+  await db
+    .insert(stripeEvents)
+    .values({ eventId, eventType, status, errorMessage })
+    .onDuplicateKeyUpdate({ set: { status, errorMessage } });
+}
+
 // ─── Create Stripe Connect account for vendor ─────────────────────────────────
-export async function createConnectAccount(userId: number, email: string, origin: string) {
+export async function createConnectAccount(
+  userId: number,
+  email: string,
+  origin: string
+) {
   const db = await getDb();
   if (!db) throw new Error("Database unavailable");
 
   // Check if already has an account
-  const existing = await db.select().from(stripeAccounts).where(eq(stripeAccounts.userId, userId)).limit(1);
+  const existing = await db
+    .select()
+    .from(stripeAccounts)
+    .where(eq(stripeAccounts.userId, userId))
+    .limit(1);
   if (existing.length > 0 && existing[0].stripeAccountId) {
     // Return onboarding link for existing account
     const accountLink = await stripe.accountLinks.create({
@@ -28,7 +80,11 @@ export async function createConnectAccount(userId: number, email: string, origin
       return_url: `${origin}/vendor?stripe=success`,
       type: "account_onboarding",
     });
-    return { url: accountLink.url, accountId: existing[0].stripeAccountId, isNew: false };
+    return {
+      url: accountLink.url,
+      accountId: existing[0].stripeAccountId,
+      isNew: false,
+    };
   }
 
   // Create new Express account
@@ -54,7 +110,10 @@ export async function createConnectAccount(userId: number, email: string, origin
   });
 
   // Update user record
-  await db.update(users).set({ stripeAccountId: account.id }).where(eq(users.id, userId));
+  await db
+    .update(users)
+    .set({ stripeAccountId: account.id })
+    .where(eq(users.id, userId));
 
   // Create onboarding link
   const accountLink = await stripe.accountLinks.create({
@@ -77,19 +136,26 @@ export async function getConnectAccountStatus(userId: number) {
   const db = await getDb();
   if (!db) return null;
 
-  const rows = await db.select().from(stripeAccounts).where(eq(stripeAccounts.userId, userId)).limit(1);
+  const rows = await db
+    .select()
+    .from(stripeAccounts)
+    .where(eq(stripeAccounts.userId, userId))
+    .limit(1);
   if (rows.length === 0) return null;
 
   const row = rows[0];
   try {
     const account = await stripe.accounts.retrieve(row.stripeAccountId);
     // Sync status
-    await db.update(stripeAccounts).set({
-      chargesEnabled: account.charges_enabled,
-      payoutsEnabled: account.payouts_enabled,
-      detailsSubmitted: account.details_submitted,
-      accountStatus: account.charges_enabled ? "active" : "pending",
-    }).where(eq(stripeAccounts.userId, userId));
+    await db
+      .update(stripeAccounts)
+      .set({
+        chargesEnabled: account.charges_enabled,
+        payoutsEnabled: account.payouts_enabled,
+        detailsSubmitted: account.details_submitted,
+        accountStatus: account.charges_enabled ? "active" : "pending",
+      })
+      .where(eq(stripeAccounts.userId, userId));
 
     return {
       accountId: row.stripeAccountId,
@@ -123,7 +189,11 @@ export async function createContentCheckout(
   const db = await getDb();
   if (!db) throw new Error("Database unavailable");
 
-  const items = await db.select().from(contentItems).where(eq(contentItems.id, contentItemId)).limit(1);
+  const items = await db
+    .select()
+    .from(contentItems)
+    .where(eq(contentItems.id, contentItemId))
+    .limit(1);
   if (items.length === 0) throw new Error("Content item not found");
   const item = items[0];
 
@@ -133,23 +203,30 @@ export async function createContentCheckout(
   const platformFee = Math.round(priceInCents * PLATFORM_FEE_PERCENT);
 
   // Get vendor's Stripe account for transfer
-  const vendorAccounts = await db.select().from(stripeAccounts).where(eq(stripeAccounts.userId, item.userId)).limit(1);
-  const vendorStripeId = vendorAccounts.length > 0 ? vendorAccounts[0].stripeAccountId : null;
+  const vendorAccounts = await db
+    .select()
+    .from(stripeAccounts)
+    .where(eq(stripeAccounts.userId, item.userId))
+    .limit(1);
+  const vendorStripeId =
+    vendorAccounts.length > 0 ? vendorAccounts[0].stripeAccountId : null;
 
   const sessionParams: Stripe.Checkout.SessionCreateParams = {
     payment_method_types: ["card"],
-    line_items: [{
-      price_data: {
-        currency: "usd",
-        product_data: {
-          name: item.title,
-          description: item.description ?? undefined,
-          images: item.thumbnailUrl ? [item.thumbnailUrl] : [],
+    line_items: [
+      {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: item.title,
+            description: item.description ?? undefined,
+            images: item.thumbnailUrl ? [item.thumbnailUrl] : [],
+          },
+          unit_amount: priceInCents,
         },
-        unit_amount: priceInCents,
+        quantity: 1,
       },
-      quantity: 1,
-    }],
+    ],
     mode: "payment",
     customer_email: buyerEmail,
     client_reference_id: buyerId.toString(),
@@ -174,7 +251,7 @@ export async function createContentCheckout(
 
   const session = await stripe.checkout.sessions.create(sessionParams);
 
-  // Create pending order record
+  // Create pending order record — order is confirmed via webhook, not here
   await db.insert(orders).values({
     buyerId,
     sellerId: item.userId,
@@ -200,7 +277,11 @@ export async function createProductCheckout(
   const db = await getDb();
   if (!db) throw new Error("Database unavailable");
 
-  const rows = await db.select().from(products).where(eq(products.id, productId)).limit(1);
+  const rows = await db
+    .select()
+    .from(products)
+    .where(eq(products.id, productId))
+    .limit(1);
   if (rows.length === 0) throw new Error("Product not found");
   const product = rows[0];
 
@@ -211,18 +292,20 @@ export async function createProductCheckout(
 
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ["card"],
-    line_items: [{
-      price_data: {
-        currency: "usd",
-        product_data: {
-          name: product.title,
-          description: product.description ?? undefined,
-          images: product.imageUrl ? [product.imageUrl] : [],
+    line_items: [
+      {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: product.title,
+            description: product.description ?? undefined,
+            images: product.imageUrl ? [product.imageUrl] : [],
+          },
+          unit_amount: priceInCents,
         },
-        unit_amount: priceInCents,
+        quantity: 1,
       },
-      quantity: 1,
-    }],
+    ],
     mode: "payment",
     customer_email: buyerEmail,
     client_reference_id: buyerId.toString(),
@@ -237,7 +320,7 @@ export async function createProductCheckout(
     allow_promotion_codes: true,
   });
 
-  // Create pending order
+  // Create pending order — confirmed via webhook
   await db.insert(orders).values({
     buyerId,
     productId,
@@ -252,7 +335,7 @@ export async function createProductCheckout(
   return { url: session.url!, sessionId: session.id };
 }
 
-// ─── Handle Stripe webhook events ─────────────────────────────────────────────
+// ─── Handle Stripe webhook events (with idempotency) ─────────────────────────
 export async function handleWebhookEvent(rawBody: Buffer, signature: string) {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
   let event: Stripe.Event;
@@ -263,7 +346,7 @@ export async function handleWebhookEvent(rawBody: Buffer, signature: string) {
     throw new Error(`Webhook signature verification failed: ${err}`);
   }
 
-  // Handle test events
+  // Handle test events — return immediately without DB operations
   if (event.id.startsWith("evt_test_")) {
     console.log("[Webhook] Test event detected, returning verification response");
     return { verified: true };
@@ -272,48 +355,80 @@ export async function handleWebhookEvent(rawBody: Buffer, signature: string) {
   const db = await getDb();
   if (!db) return { received: true };
 
-  switch (event.type) {
-    case "checkout.session.completed": {
-      const session = event.data.object as Stripe.Checkout.Session;
-      const sessionId = session.id;
+  // ── IDEMPOTENCY CHECK ──────────────────────────────────────────────────────
+  // Stripe may deliver the same event multiple times (retries on non-2xx or
+  // network failures). Check the stripe_events table before processing to
+  // prevent duplicate orders, double-charging, or duplicate notifications.
+  if (await isEventProcessed(db, event.id)) {
+    console.log(`[Webhook] Duplicate event skipped: ${event.id} (${event.type})`);
+    return { received: true, duplicate: true };
+  }
 
-      // Mark order as paid
-      await db.update(orders)
-        .set({ status: "paid" })
-        .where(eq(orders.stripePaymentId, sessionId));
+  // Process the event and record it atomically
+  try {
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const sessionId = session.id;
 
-      // Notify owner
-      await notifyOwner({
-        title: "💰 New Sale on NEXUS!",
-        content: `Order paid: ${session.amount_total ? `$${(session.amount_total / 100).toFixed(2)}` : "unknown"} — Customer: ${session.customer_email ?? "unknown"}`,
-      });
-      break;
-    }
+        // Mark order as paid
+        await db
+          .update(orders)
+          .set({ status: "paid" })
+          .where(eq(orders.stripePaymentId, sessionId));
 
-    case "account.updated": {
-      const account = event.data.object as Stripe.Account;
-      const rows = await db.select().from(stripeAccounts)
-        .where(eq(stripeAccounts.stripeAccountId, account.id)).limit(1);
-
-      if (rows.length > 0) {
-        await db.update(stripeAccounts).set({
-          chargesEnabled: account.charges_enabled,
-          payoutsEnabled: account.payouts_enabled,
-          detailsSubmitted: account.details_submitted,
-          accountStatus: account.charges_enabled ? "active" : "pending",
-        }).where(eq(stripeAccounts.stripeAccountId, account.id));
+        // Notify owner
+        await notifyOwner({
+          title: "💰 New Sale on NEXUS!",
+          content: `Order paid: ${session.amount_total ? `$${(session.amount_total / 100).toFixed(2)}` : "unknown"} — Customer: ${session.customer_email ?? "unknown"}`,
+        });
+        break;
       }
-      break;
+
+      case "account.updated": {
+        const account = event.data.object as Stripe.Account;
+        const rows = await db
+          .select()
+          .from(stripeAccounts)
+          .where(eq(stripeAccounts.stripeAccountId, account.id))
+          .limit(1);
+
+        if (rows.length > 0) {
+          await db
+            .update(stripeAccounts)
+            .set({
+              chargesEnabled: account.charges_enabled,
+              payoutsEnabled: account.payouts_enabled,
+              detailsSubmitted: account.details_submitted,
+              accountStatus: account.charges_enabled ? "active" : "pending",
+            })
+            .where(eq(stripeAccounts.stripeAccountId, account.id));
+        }
+        break;
+      }
+
+      case "payment_intent.payment_failed": {
+        const pi = event.data.object as Stripe.PaymentIntent;
+        console.log(`[Webhook] Payment failed: ${pi.id}`);
+        break;
+      }
+
+      default:
+        console.log(`[Webhook] Unhandled event type: ${event.type}`);
     }
 
-    case "payment_intent.payment_failed": {
-      const pi = event.data.object as Stripe.PaymentIntent;
-      console.log(`[Webhook] Payment failed: ${pi.id}`);
-      break;
-    }
-
-    default:
-      console.log(`[Webhook] Unhandled event type: ${event.type}`);
+    // Record successful processing
+    await recordEvent(db, event.id, event.type, "processed");
+  } catch (err) {
+    // Record failure for audit trail, then re-throw so Stripe retries
+    await recordEvent(
+      db,
+      event.id,
+      event.type,
+      "failed",
+      err instanceof Error ? err.message : String(err)
+    );
+    throw err;
   }
 
   return { received: true };

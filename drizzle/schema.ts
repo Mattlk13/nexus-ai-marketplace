@@ -461,3 +461,57 @@ export const uploadedFiles = mysqlTable(
 
 export type UploadedFile = typeof uploadedFiles.$inferSelect;
 export type InsertUploadedFile = typeof uploadedFiles.$inferInsert;
+
+// ─── Stripe Webhook Events (idempotency) ─────────────────────────────────────
+// Stores processed Stripe event IDs to prevent duplicate processing when
+// Stripe retries webhook delivery. Check before processing any webhook event.
+export const stripeEvents = mysqlTable(
+  "stripe_events",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    eventId: varchar("eventId", { length: 128 }).notNull().unique(),
+    eventType: varchar("eventType", { length: 128 }).notNull(),
+    processedAt: timestamp("processedAt").defaultNow().notNull(),
+    status: mysqlEnum("status", ["processed", "failed", "skipped"])
+      .default("processed")
+      .notNull(),
+    errorMessage: text("errorMessage"),
+  },
+  table => ({
+    eventIdIdx: index("stripe_events_event_id_idx").on(table.eventId),
+    eventTypeIdx: index("stripe_events_type_idx").on(table.eventType),
+    processedAtIdx: index("stripe_events_processed_at_idx").on(
+      table.processedAt
+    ),
+  })
+);
+
+export type StripeEvent = typeof stripeEvents.$inferSelect;
+export type InsertStripeEvent = typeof stripeEvents.$inferInsert;
+
+// ─── LLM Usage (per-user rate limiting) ──────────────────────────────────────
+// Tracks per-user LLM invocations per hour to enforce rate limits.
+// Each row represents one LLM call. Rows older than 1 hour are ignored.
+export const llmUsage = mysqlTable(
+  "llm_usage",
+  {
+    id: int("id").autoincrement().primaryKey(),
+    userId: int("userId")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    procedure: varchar("procedure", { length: 64 }).notNull(),
+    tokensUsed: int("tokensUsed").default(0),
+    createdAt: timestamp("createdAt").defaultNow().notNull(),
+  },
+  table => ({
+    userIdx: index("llm_usage_user_idx").on(table.userId),
+    createdAtIdx: index("llm_usage_created_at_idx").on(table.createdAt),
+    userCreatedIdx: index("llm_usage_user_created_idx").on(
+      table.userId,
+      table.createdAt
+    ),
+  })
+);
+
+export type LlmUsage = typeof llmUsage.$inferSelect;
+export type InsertLlmUsage = typeof llmUsage.$inferInsert;

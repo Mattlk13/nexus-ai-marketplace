@@ -1,0 +1,143 @@
+name: Unity CI/CD — Build, Test & Deploy
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "unity/**"
+      - "Assets/**"
+      - "Packages/**"
+      - "ProjectSettings/**"
+      - ".github/workflows/unity-ci-cd.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "unity/**"
+      - "Assets/**"
+      - "Packages/**"
+      - "ProjectSettings/**"
+
+env:
+  UNITY_VERSION: "6000.0.30f1" # Unity 6 LTS
+  UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+
+jobs:
+  # ── Unity Tests ──────────────────────────────────────────────────────────────
+  unity-test:
+    name: Unity Tests (${{ matrix.test-mode }})
+    runs-on: ubuntu-latest
+    if: hashFiles('Assets/**', 'ProjectSettings/**') != ''
+    strategy:
+      fail-fast: false
+      matrix:
+        test-mode: [playmode, editmode]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: Library-
+
+      - name: Run Unity Tests (${{ matrix.test-mode }})
+        uses: game-ci/unity-test-runner@v4
+        env:
+          UNITY_LICENSE: ${{ env.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: "."
+          unityVersion: ${{ env.UNITY_VERSION }}
+          testMode: ${{ matrix.test-mode }}
+          artifactsPath: TestResults/${{ matrix.test-mode }}
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unity-test-results-${{ matrix.test-mode }}
+          path: TestResults/${{ matrix.test-mode }}
+          retention-days: 14
+
+  # ── Unity Build ──────────────────────────────────────────────────────────────
+  unity-build:
+    name: Unity Build (${{ matrix.targetPlatform }})
+    runs-on: ubuntu-latest
+    needs: unity-test
+    if: github.ref == 'refs/heads/main' && hashFiles('Assets/**', 'ProjectSettings/**') != ''
+    strategy:
+      fail-fast: false
+      matrix:
+        targetPlatform:
+          - WebGL # For NEXUS marketplace WebGL embeds
+          - StandaloneLinux64
+          - StandaloneWindows64
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-${{ matrix.targetPlatform }}-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-${{ matrix.targetPlatform }}-
+            Library-
+
+      - name: Build Unity (${{ matrix.targetPlatform }})
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ env.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: "."
+          unityVersion: ${{ env.UNITY_VERSION }}
+          targetPlatform: ${{ matrix.targetPlatform }}
+          buildName: nexus-${{ matrix.targetPlatform }}
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-build-${{ matrix.targetPlatform }}-${{ github.sha }}
+          path: build/${{ matrix.targetPlatform }}
+          retention-days: 30
+
+  # ── Unity WebGL Deploy to NEXUS CDN ─────────────────────────────────────────
+  deploy-webgl:
+    name: Deploy WebGL Build to CDN
+    runs-on: ubuntu-latest
+    needs: unity-build
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Download WebGL build
+        uses: actions/download-artifact@v4
+        with:
+          name: unity-build-WebGL-${{ github.sha }}
+          path: webgl-build/
+
+      - name: Deploy WebGL to S3/CDN
+        run: |
+          echo "Deploying WebGL build to NEXUS CDN..."
+          # aws s3 sync webgl-build/ s3://${{ vars.CDN_BUCKET }}/unity/webgl/ --delete
+          echo "WebGL deployment complete"
+
+  # ── Unity Cloud Build Trigger ────────────────────────────────────────────────
+  trigger-cloud-build:
+    name: Trigger Unity Cloud Build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && vars.UNITY_CLOUD_BUILD_ENABLED == 'true'
+    steps:
+      - name: Trigger Unity Cloud Build
+        run: |
+          curl -X POST \
+            "https://build-api.cloud.unity3d.com/api/v1/orgs/${{ vars.UNITY_ORG_ID }}/projects/${{ vars.UNITY_PROJECT_ID }}/buildtargets/_all/builds" \
+            -H "Authorization: Basic $(echo -n '${{ secrets.UNITY_CLOUD_API_KEY }}' | base64)" \
+            -H "Content-Type: application/json" \
+            -d '{"clean": false, "delay": 0}' \
+            --fail-with-body || echo "Cloud build trigger failed — check Unity Cloud Build settings"

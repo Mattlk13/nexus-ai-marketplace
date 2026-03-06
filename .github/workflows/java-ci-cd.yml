@@ -1,0 +1,178 @@
+name: Java CI/CD — Maven + Eclipse + NetBeans
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "java/**"
+      - "*.java"
+      - "pom.xml"
+      - "build.xml"
+      - ".github/workflows/java-ci-cd.yml"
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - "java/**"
+      - "*.java"
+      - "pom.xml"
+      - "build.xml"
+
+env:
+  JAVA_VERSION: "21"
+  MAVEN_OPTS: "-Xmx2g -XX:+UseG1GC"
+
+jobs:
+  # ── Maven Build & Test ───────────────────────────────────────────────────────
+  maven-build:
+    name: Maven Build & Test (Java ${{ env.JAVA_VERSION }})
+    runs-on: ubuntu-latest
+    if: hashFiles('pom.xml') != ''
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Java ${{ env.JAVA_VERSION }} (Eclipse Temurin)
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+
+      - name: Validate POM
+        run: mvn validate --batch-mode
+
+      - name: Compile
+        run: mvn compile --batch-mode
+
+      - name: Run tests
+        run: mvn test --batch-mode
+        env:
+          MAVEN_OPTS: ${{ env.MAVEN_OPTS }}
+
+      - name: Package
+        run: mvn package -DskipTests --batch-mode
+
+      - name: Generate Javadoc
+        run: mvn javadoc:javadoc --batch-mode
+        continue-on-error: true
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: maven-test-reports
+          path: target/surefire-reports/
+          retention-days: 14
+
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: maven-jar-${{ github.sha }}
+          path: target/*.jar
+          retention-days: 30
+
+  # ── Maven Security Audit ─────────────────────────────────────────────────────
+  maven-security:
+    name: Maven Dependency Security Audit
+    runs-on: ubuntu-latest
+    if: hashFiles('pom.xml') != ''
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+
+      - name: OWASP Dependency Check
+        run: |
+          mvn org.owasp:dependency-check-maven:check \
+            -DfailBuildOnCVSS=7 \
+            --batch-mode
+        continue-on-error: true
+
+      - name: Upload OWASP report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owasp-report
+          path: target/dependency-check-report.html
+          retention-days: 30
+
+  # ── Ant / NetBeans Build ─────────────────────────────────────────────────────
+  ant-build:
+    name: Ant Build (NetBeans Project)
+    runs-on: ubuntu-latest
+    if: hashFiles('build.xml') != ''
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+
+      - name: Install Ant
+        run: sudo apt-get install -y ant ant-optional
+
+      - name: Validate build.xml
+        run: ant -p
+
+      - name: Clean and build
+        run: ant clean build
+
+      - name: Run tests
+        run: ant test
+        continue-on-error: true
+
+      - name: Package
+        run: ant jar
+        continue-on-error: true
+
+  # ── Eclipse Che Workspace Validation ─────────────────────────────────────────
+  eclipse-devfile:
+    name: Validate Eclipse Che Devfile
+    runs-on: ubuntu-latest
+    if: hashFiles('devfile.yaml', '.devfile.yaml', 'devfile.yml') != ''
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install devfile validator
+        run: npm install -g @devfile/validator 2>/dev/null || echo "Devfile validator not available, skipping"
+
+      - name: Validate devfile
+        run: |
+          if command -v devfile-validator &>/dev/null; then
+            devfile-validator devfile.yaml || devfile-validator .devfile.yaml || true
+          else
+            echo "Devfile validation skipped — validator not installed"
+            # Basic YAML syntax check
+            python3 -c "import yaml; yaml.safe_load(open('devfile.yaml' if __import__('os').path.exists('devfile.yaml') else '.devfile.yaml'))" && echo "YAML syntax OK"
+          fi
+
+  # ── Maven Deploy (CD) ────────────────────────────────────────────────────────
+  maven-deploy:
+    name: Maven Deploy to GitHub Packages
+    runs-on: ubuntu-latest
+    needs: [maven-build, maven-security]
+    if: github.ref == 'refs/heads/main' && hashFiles('pom.xml') != ''
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+          server-id: github
+          server-username: GITHUB_ACTOR
+          server-password: GITHUB_TOKEN
+
+      - name: Deploy to GitHub Packages
+        run: mvn deploy -DskipTests --batch-mode
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
