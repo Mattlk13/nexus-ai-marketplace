@@ -82,7 +82,7 @@
     "recharts": "^2.15.2",
     "sanitize-filename": "^1.6.3",
     "sonner": "^2.0.7",
-    "streamdown": "^1.4.0",
+    "streamdown": "^2.4.0",
     "stripe": "^20.4.0",
     "superjson": "^1.13.3",
     "tailwind-merge": "^3.3.1",
